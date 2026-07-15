@@ -47,6 +47,8 @@ export const readText = (path: string): Promise<string> =>
 export const readAsset = (path: string): Promise<string> =>
   invoke("read_asset", { path });
 
+export const listSpecs = (): Promise<string[]> => invoke("list_specs");
+
 // --- events ---
 
 export const onPtyData = (cb: (chunk: string) => void): Promise<UnlistenFn> =>

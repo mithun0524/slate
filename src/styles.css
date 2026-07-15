@@ -707,6 +707,178 @@ body {
   color: #f9c4c0;
 }
 
+/* word-level intra-line highlight */
+.wl {
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.wl-del {
+  background: rgba(248, 81, 73, 0.4);
+  color: #ffd7d4;
+}
+.wl-add {
+  background: rgba(46, 160, 67, 0.45);
+  color: #d6ffe0;
+}
+
+/* mini segmented (diff mode toggle) */
+.mini-seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-left: 4px;
+}
+.mini-seg button {
+  border: none;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.mini-seg button.on {
+  background: var(--bg-3);
+  color: var(--accent);
+}
+
+/* split diff */
+.split-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.split-row .dline {
+  grid-template-columns: 40px 18px 1fr;
+  border-right: 1px solid var(--border-soft);
+  min-width: 0;
+}
+.split-row .dline.empty {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(255, 255, 255, 0.015) 6px,
+    rgba(255, 255, 255, 0.015) 12px
+  );
+}
+
+/* ============ spec explorer ============ */
+.spec-view {
+  flex-direction: row;
+}
+.spec-side {
+  display: flex;
+  width: 244px;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--border);
+  background: var(--bg-2);
+  position: relative;
+}
+.spec-tree {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.spec-tree-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--fg-dim);
+  border-bottom: 1px solid var(--border-soft);
+}
+.spec-count {
+  background: var(--bg-3);
+  color: var(--fg-mut);
+  border-radius: 20px;
+  padding: 0 7px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.spec-tree-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.spec-tree-empty {
+  padding: 20px 14px;
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.spec-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.spec-row.dir {
+  color: var(--fg-mut);
+}
+.spec-row.file:hover {
+  background: var(--bg-hover);
+}
+.spec-row.file.active {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.spec-row.file.active .spec-name {
+  color: var(--accent);
+}
+.spec-icon {
+  color: var(--accent);
+  font-size: 9px;
+  opacity: 0.7;
+}
+.spec-folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spec-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg);
+}
+.spec-collapse,
+.spec-reveal {
+  border: none;
+  background: var(--bg-3);
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 13px;
+}
+.spec-collapse {
+  width: 14px;
+  border-left: 1px solid var(--border);
+}
+.spec-collapse:hover,
+.spec-reveal:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+.spec-reveal {
+  width: 18px;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--border);
+}
+.spec-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+.spec-content .view {
+  flex: 1;
+  min-width: 0;
+}
+
 /* scrollbars */
 ::-webkit-scrollbar {
   width: 11px;

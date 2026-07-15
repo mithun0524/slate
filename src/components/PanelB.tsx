@@ -1,5 +1,5 @@
 import type { ViewIntent } from "../lib/ipc";
-import { MarkdownView } from "./MarkdownView";
+import { SpecView } from "./SpecView";
 import { TreeView } from "./TreeView";
 import { DiffView } from "./DiffView";
 
@@ -16,7 +16,7 @@ export function PanelB({
 }) {
   switch (intent.kind) {
     case "spec":
-      return <MarkdownView path={intent.path} refreshKey={seq} />;
+      return <SpecView path={intent.path} refreshKey={seq} />;
     case "diff":
       return <DiffView paths={intent.paths} refreshKey={seq} />;
     case "tree":

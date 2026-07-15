@@ -134,6 +134,67 @@ fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
     std::fs::read_to_string(&full).map_err(|e| e.to_string())
 }
 
+/// Directory names never descended into when listing specs.
+const SPEC_IGNORED: &[&str] = &[
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".next",
+    "vendor",
+];
+
+/// List every markdown file in the workspace (relative paths), for the spec
+/// explorer. Bounded so a pathological tree can't hang the UI.
+#[tauri::command]
+fn list_specs(state: State<AppState>) -> Result<Vec<String>, String> {
+    let root = state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no workspace open")?;
+
+    let mut out: Vec<String> = Vec::new();
+    let mut stack: Vec<PathBuf> = vec![root.clone()];
+    const MAX: usize = 5000;
+
+    while let Some(dir) = stack.pop() {
+        let entries = match std::fs::read_dir(&dir) {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let name = entry.file_name().to_string_lossy().to_string();
+            let ft = match entry.file_type() {
+                Ok(t) => t,
+                Err(_) => continue,
+            };
+            if ft.is_dir() {
+                if SPEC_IGNORED.iter().any(|ig| *ig == name) || name.starts_with('.') {
+                    continue;
+                }
+                stack.push(path);
+            } else {
+                let lower = name.to_ascii_lowercase();
+                if lower.ends_with(".md") || lower.ends_with(".markdown") {
+                    if let Ok(rel) = path.strip_prefix(&root) {
+                        out.push(rel.to_string_lossy().to_string());
+                        if out.len() >= MAX {
+                            out.sort();
+                            return Ok(out);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    out.sort();
+    Ok(out)
+}
+
 /// Read a workspace image and return it as a `data:` URL, so relative `<img>`
 /// paths in a rendered README (which the webview cannot fetch) still display.
 #[tauri::command]
@@ -200,7 +261,8 @@ pub fn run() {
             git_tree,
             git_diff,
             read_text,
-            read_asset
+            read_asset,
+            list_specs
         ])
         .run(tauri::generate_context!())
         .expect("error while running vellum");

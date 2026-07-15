@@ -151,9 +151,8 @@ function App() {
               <div className="segmented" role="tablist">
                 <button
                   className={`seg ${intent.kind === "spec" ? "on" : ""}`}
-                  disabled={!lastSpec}
                   onClick={() =>
-                    lastSpec && apply({ kind: "spec", path: lastSpec }, "manual")
+                    apply({ kind: "spec", path: lastSpec ?? "" }, "manual")
                   }
                 >
                   Spec
