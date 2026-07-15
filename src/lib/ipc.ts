@@ -38,9 +38,16 @@ export interface CommitInfo {
 
 export type IntentSource = "classifier" | "override";
 
+export type ChangeKind = "created" | "modified" | "deleted";
+export interface FileChange {
+  path: string;
+  kind: ChangeKind;
+}
+
 export interface IntentEvent {
   intent: ViewIntent;
   source: IntentSource;
+  burst?: FileChange[];
 }
 
 export interface TreeEntry {

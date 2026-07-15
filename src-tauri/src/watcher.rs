@@ -57,6 +57,7 @@ pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String
         let payload = IntentEvent {
             intent,
             source: IntentSource::Classifier,
+            burst: burst.events.clone(),
         };
         let _ = app.emit("vellum://intent", payload);
     });

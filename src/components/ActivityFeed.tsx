@@ -1,10 +1,13 @@
+import { useState } from "react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Icon } from "./ActivityBar";
-import type { IntentSource, ViewIntent } from "../lib/ipc";
+import type { FileChange, IntentSource, ViewIntent } from "../lib/ipc";
 
 export interface ActivityEntry {
   intent: ViewIntent;
   source: IntentSource;
   at: number;
+  burst?: FileChange[];
 }
 
 function rel(ms: number): string {
@@ -15,7 +18,6 @@ function rel(ms: number): string {
   return `${Math.floor(d / 3600)}h ago`;
 }
 
-// intent -> the ActivityBar icon name + a human label.
 function describe(i: ViewIntent): { icon: string; label: string; sub: string } {
   switch (i.kind) {
     case "spec":
@@ -42,8 +44,13 @@ const SOURCE_LABEL: Record<string, string> = {
   override: "agent",
   manual: "you",
 };
+const KIND_MARK: Record<string, string> = {
+  created: "A",
+  modified: "M",
+  deleted: "D",
+};
 
-// The reactive log: every view-switch, why it happened, click to jump/replay.
+// The reactive log: every view-switch, why it happened (which files), click to replay.
 export function ActivityFeed({
   history,
   onReplay,
@@ -53,6 +60,14 @@ export function ActivityFeed({
   onReplay: (intent: ViewIntent) => void;
   onClear: () => void;
 }) {
+  const [open, setOpen] = useState<Set<number>>(new Set());
+  const toggle = (i: number) =>
+    setOpen((s) => {
+      const n = new Set(s);
+      n.has(i) ? n.delete(i) : n.add(i);
+      return n;
+    });
+
   return (
     <div className="view act-view">
       <div className="view-crumb">
@@ -76,25 +91,47 @@ export function ActivityFeed({
         <div className="act-scroll">
           {history.map((e, idx) => {
             const d = describe(e.intent);
+            const hasBurst = !!e.burst && e.burst.length > 0;
+            const isOpen = open.has(idx);
             return (
-              <button className="act-item" key={idx} onClick={() => onReplay(e.intent)}>
-                <span className="act-rail">
-                  <span className={`act-dot src-${e.source}`} />
-                </span>
-                <span className="act-ic">
-                  <Icon name={d.icon} />
-                </span>
-                <span className="act-body">
-                  <span className="act-line">
-                    <span className="act-label">{d.label}</span>
-                    {d.sub && <span className="act-sub">{d.sub}</span>}
-                  </span>
-                  <span className="act-meta">
-                    <span className={`act-src src-${e.source}`}>{SOURCE_LABEL[e.source]}</span>
-                    <span className="act-time">{rel(e.at)}</span>
-                  </span>
-                </span>
-              </button>
+              <div className="act-row" key={idx}>
+                <div className="act-item">
+                  <button className="act-main" onClick={() => onReplay(e.intent)}>
+                    <span className="act-rail">
+                      <span className={`act-dot src-${e.source}`} />
+                    </span>
+                    <span className="act-ic">
+                      <Icon name={d.icon} />
+                    </span>
+                    <span className="act-body">
+                      <span className="act-line">
+                        <span className="act-label">{d.label}</span>
+                        {d.sub && <span className="act-sub">{d.sub}</span>}
+                      </span>
+                      <span className="act-meta">
+                        <span className={`act-src src-${e.source}`}>{SOURCE_LABEL[e.source]}</span>
+                        <span className="act-time">{rel(e.at)}</span>
+                        {hasBurst && <span className="act-nfiles">{e.burst!.length} changed</span>}
+                      </span>
+                    </span>
+                  </button>
+                  {hasBurst && (
+                    <button className="act-caret" title="Why?" onClick={() => toggle(idx)}>
+                      {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                  )}
+                </div>
+                {isOpen && hasBurst && (
+                  <div className="act-burst">
+                    {e.burst!.map((f, i) => (
+                      <div className="act-file" key={i}>
+                        <span className={`bk bk-${f.kind}`}>{KIND_MARK[f.kind] ?? "?"}</span>
+                        <span className="act-file-path">{f.path}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>

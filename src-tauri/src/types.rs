@@ -74,6 +74,9 @@ pub enum IntentSource {
 pub struct IntentEvent {
     pub intent: ViewIntent,
     pub source: IntentSource,
+    /// The filesystem changes that triggered this intent (empty for overrides).
+    #[serde(default)]
+    pub burst: Vec<FileChange>,
 }
 
 /// HEAD summary for the status bar.

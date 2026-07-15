@@ -1086,18 +1086,72 @@ body.dragging-split * {
 }
 .act-item {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 8px 14px;
-  cursor: pointer;
+  align-items: stretch;
   transition: background 0.1s;
 }
 .act-item:hover {
   background: var(--bg-hover);
+}
+.act-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 6px 8px 14px;
+  cursor: pointer;
+}
+.act-caret {
+  width: 30px;
+  flex: 0 0 auto;
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.act-caret:hover {
+  color: var(--fg);
+}
+.act-nfiles {
+  color: var(--fg-dim);
+}
+.act-burst {
+  padding: 2px 14px 9px 46px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.act-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 1px 0;
+  color: var(--fg-mut);
+}
+.act-file-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bk {
+  width: 15px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 10px;
+  flex: 0 0 auto;
+}
+.bk-created {
+  color: var(--add);
+}
+.bk-modified {
+  color: #e0b04a;
+}
+.bk-deleted {
+  color: var(--del);
 }
 .act-rail {
   width: 10px;

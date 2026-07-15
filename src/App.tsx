@@ -114,7 +114,7 @@ function App() {
     const p = onIntent((ev) => {
       // Log every reactive event (even when pinned) — this is the movie of the work.
       setHistory((h) =>
-        [{ intent: ev.intent, source: ev.source, at: Date.now() }, ...h].slice(0, 300),
+        [{ intent: ev.intent, source: ev.source, at: Date.now(), burst: ev.burst }, ...h].slice(0, 300),
       );
       if (pinnedRef.current) return;
       apply(ev.intent, ev.source);

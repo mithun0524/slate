@@ -86,7 +86,11 @@ pub fn start(app: AppHandle) {
                     if let Ok(intent) = serde_json::from_value::<ViewIntent>(val) {
                         let _ = app.emit(
                             "vellum://intent",
-                            IntentEvent { intent, source: IntentSource::Override },
+                            IntentEvent {
+                                intent,
+                                source: IntentSource::Override,
+                                burst: Vec::new(),
+                            },
                         );
                     }
                 }
