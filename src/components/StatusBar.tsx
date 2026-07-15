@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { agentRunning, gitHeadInfo, gitTree, type HeadInfo } from "../lib/ipc";
 import type { IntentSource } from "../lib/ipc";
+import { GitBranch } from "lucide-react";
 
 type Source = IntentSource | "manual";
 
@@ -71,7 +72,7 @@ export function StatusBar({
         {isRepo ? (
           <>
             <span className="sb-item" title="Current branch">
-              <span className="sb-glyph">⎇</span>
+              <GitBranch size={12} />
               {head.branch || "—"}
               {(head.ahead > 0 || head.behind > 0) && (
                 <span className="sb-sync">

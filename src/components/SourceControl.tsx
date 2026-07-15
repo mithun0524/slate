@@ -9,6 +9,7 @@ import {
   type TreeEntry,
 } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
+import { ChevronDown, FileDiff, GitBranch, Minus, Plus, Undo2 } from "lucide-react";
 
 const LETTER: Record<string, string> = {
   new: "A",
@@ -20,20 +21,6 @@ const LETTER: Record<string, string> = {
   conflicted: "!",
   clean: "",
 };
-
-const I = {
-  plus: "M8 3.4v9.2M3.4 8h9.2",
-  minus: "M3.4 8h9.2",
-  // counter-clockwise revert arrow
-  discard: "M4.2 6.6V3.8M4.2 6.6H7M12 9a4.2 4.2 0 10-1.4 3.1",
-  // open file / view changes (arrow out of a page)
-  open: "M8 3H4a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V8M9.5 3H13v3.5M13 3L7.5 8.5",
-};
-const Act = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
 
 function Row({
   e,
@@ -57,21 +44,21 @@ function Row({
       <span className="scm-dir">{dir}</span>
       <span className="scm-actions" onClick={(ev) => ev.stopPropagation()}>
         <button className="scm-act" title="Open changes" onClick={() => onSelect(e.path)}>
-          <Act d={I.open} />
+          <FileDiff size={15} />
         </button>
         {onDiscard && (
           <button className="scm-act" title="Discard changes" onClick={() => onDiscard(e.path)}>
-            <Act d={I.discard} />
+            <Undo2 size={15} />
           </button>
         )}
         {onStage && (
           <button className="scm-act" title="Stage changes" onClick={() => onStage(e.path)}>
-            <Act d={I.plus} />
+            <Plus size={15} />
           </button>
         )}
         {onUnstage && (
           <button className="scm-act" title="Unstage changes" onClick={() => onUnstage(e.path)}>
-            <Act d={I.minus} />
+            <Minus size={15} />
           </button>
         )}
       </span>
@@ -150,8 +137,8 @@ export function SourceControl({
         <span className="crumb-label">source control</span>
         {branch && (
           <span className="crumb-stat">
-            <span className="pill">
-              <span className="sb-glyph">⎇</span> {branch}
+            <span className="pill scm-branch">
+              <GitBranch size={11} /> {branch}
             </span>
           </span>
         )}
@@ -210,11 +197,11 @@ export function SourceControl({
           {staged.length > 0 && (
             <div className="scm-section">
               <div className="scm-section-head">
-                <span className="chev open">▸</span>
+                <ChevronDown size={15} className="scm-chev" />
                 <span className="scm-section-title">Staged Changes</span>
                 <span className="scm-section-actions" onClick={(e) => e.stopPropagation()}>
                   <button className="scm-act" title="Unstage all" onClick={() => unstage(staged.map((e) => e.path))}>
-                    <Act d={I.minus} />
+                    <Minus size={15} />
                   </button>
                 </span>
                 <span className="scm-count">{staged.length}</span>
@@ -228,14 +215,14 @@ export function SourceControl({
           {unstaged.length > 0 && (
             <div className="scm-section">
               <div className="scm-section-head">
-                <span className="chev open">▸</span>
+                <ChevronDown size={15} className="scm-chev" />
                 <span className="scm-section-title">Changes</span>
                 <span className="scm-section-actions" onClick={(e) => e.stopPropagation()}>
                   <button className="scm-act" title="Discard all" onClick={() => discard(unstaged.map((e) => e.path))}>
-                    <Act d={I.discard} />
+                    <Undo2 size={15} />
                   </button>
                   <button className="scm-act" title="Stage all" onClick={() => stage(unstaged.map((e) => e.path))}>
-                    <Act d={I.plus} />
+                    <Plus size={15} />
                   </button>
                 </span>
                 <span className="scm-count">{unstaged.length}</span>

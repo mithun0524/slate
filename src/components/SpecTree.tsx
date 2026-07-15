@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { listSpecs } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface Node {
   name: string;
@@ -61,7 +62,11 @@ function Row({
             style={{ paddingLeft: 8 + depth * 14 }}
             onClick={() => toggle(node.path)}
           >
-            <span className={`chev ${isOpen ? "open" : ""}`}>▸</span>
+            {isOpen ? (
+              <ChevronDown size={13} className="tree-chevron" />
+            ) : (
+              <ChevronRight size={13} className="tree-chevron" />
+            )}
             <FileIcon name={node.name} dir open={isOpen} />
             <span className="spec-folder">{node.name}</span>
           </div>

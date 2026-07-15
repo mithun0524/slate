@@ -1,5 +1,6 @@
 import { Terminal } from "./Terminal";
 import type { ThemeId } from "../lib/themes";
+import { SquareTerminal, Plus, X } from "lucide-react";
 
 export interface Term {
   id: string;
@@ -32,9 +33,7 @@ export function TerminalPane({
             className={`term-tab ${t.id === activeId ? "on" : ""}`}
             onClick={() => onActivate(t.id)}
           >
-            <svg className="term-tab-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 5l3 3-3 3M8.5 11h3.5" />
-            </svg>
+            <SquareTerminal className="term-tab-ic" size={14} />
             <span className="term-tab-title">{t.title}</span>
             {terms.length > 1 && (
               <button
@@ -45,13 +44,13 @@ export function TerminalPane({
                   onClose(t.id);
                 }}
               >
-                ✕
+                <X size={13} />
               </button>
             )}
           </div>
         ))}
         <button className="term-add" title="New terminal" onClick={onAdd}>
-          +
+          <Plus size={15} />
         </button>
       </div>
       <div className="term-body">

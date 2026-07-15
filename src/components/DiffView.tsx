@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { gitDiff } from "../lib/ipc";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 type LineType = "add" | "del" | "ctx";
 interface DiffLine {
@@ -256,7 +257,11 @@ export function FileBlock({ file, mode }: { file: FileDiff; mode: Mode }) {
   return (
     <div className="dfile">
       <button className="dfile-head" onClick={() => setOpen((v) => !v)}>
-        <span className={`chev ${open ? "open" : ""}`}>▸</span>
+        {open ? (
+          <ChevronDown size={14} className="tree-chevron" />
+        ) : (
+          <ChevronRight size={14} className="tree-chevron" />
+        )}
         <span className="dfile-name">
           {dir && <span className="dfile-dir">{dir}/</span>}
           {name}

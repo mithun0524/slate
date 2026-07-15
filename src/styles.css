@@ -2291,6 +2291,18 @@ body {
   border-radius: 2px;
 }
 
+/* lucide chevrons in trees / sections */
+.tree-chevron,
+.scm-chev {
+  color: var(--fg-dim);
+  flex: 0 0 auto;
+}
+.scm-branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* file-type icons */
 .fi {
   width: 15px;

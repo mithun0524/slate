@@ -3,40 +3,9 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { cloneRepo, createProject, searchDirs } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
 import { Logo } from "./Logo";
+import { FolderOpen, GitBranch, FolderPlus, Search } from "lucide-react";
 
 type Mode = "home" | "clone" | "new" | "search";
-
-const IconWrap = ({ children }: { children: React.ReactNode }) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-);
-
-const icons = {
-  open: (
-    <IconWrap>
-      <path d="M3 7.5A1.5 1.5 0 014.5 6H9l2 2h8.5A1.5 1.5 0 0121 9.5v8A1.5 1.5 0 0119.5 19h-15A1.5 1.5 0 013 17.5z" />
-    </IconWrap>
-  ),
-  clone: (
-    <IconWrap>
-      <path d="M12 3v10m0 0l-3.4-3.4M12 13l3.4-3.4" />
-      <path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15" />
-    </IconWrap>
-  ),
-  create: (
-    <IconWrap>
-      <path d="M3 7.5A1.5 1.5 0 014.5 6H9l2 2h8.5A1.5 1.5 0 0121 9.5v8A1.5 1.5 0 0119.5 19h-15A1.5 1.5 0 013 17.5z" />
-      <path d="M12 11.5v4.5M9.75 13.75h4.5" />
-    </IconWrap>
-  ),
-  search: (
-    <IconWrap>
-      <circle cx="11" cy="11" r="6" />
-      <path d="M20 20l-4.4-4.4" />
-    </IconWrap>
-  ),
-};
 
 // Shorten a home-rooted path to ~ for display.
 function shortHome(p: string): string {
@@ -135,10 +104,7 @@ export function Welcome({
     <div className="welcome">
       <div className="wl-topbar">
         <button className="wl-searchpill" onClick={() => setMode("search")}>
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <circle cx="7" cy="7" r="4.5" />
-            <path d="M11 11l3.5 3.5" strokeLinecap="round" />
-          </svg>
+          <Search size={13} />
           Search projects…
         </button>
       </div>
@@ -155,19 +121,19 @@ export function Welcome({
           <>
             <div className="wl-grid wl-anim" style={{ animationDelay: "60ms" }}>
               <button className="wl-card" onClick={browse}>
-                <span className="wl-card-ic">{icons.open}</span>
+                <span className="wl-card-ic"><FolderOpen size={19} /></span>
                 <span className="wl-card-title">Open project</span>
               </button>
               <button className="wl-card" onClick={() => setMode("clone")}>
-                <span className="wl-card-ic">{icons.clone}</span>
+                <span className="wl-card-ic"><GitBranch size={19} /></span>
                 <span className="wl-card-title">Clone repo</span>
               </button>
               <button className="wl-card" onClick={() => setMode("new")}>
-                <span className="wl-card-ic">{icons.create}</span>
+                <span className="wl-card-ic"><FolderPlus size={19} /></span>
                 <span className="wl-card-title">New project</span>
               </button>
               <button className="wl-card" onClick={() => setMode("search")}>
-                <span className="wl-card-ic">{icons.search}</span>
+                <span className="wl-card-ic"><Search size={19} /></span>
                 <span className="wl-card-title">Search machine</span>
               </button>
             </div>
@@ -208,10 +174,7 @@ export function Welcome({
               ‹ back
             </button>
             <div className="spot-search">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
-                <circle cx="7" cy="7" r="4.5" />
-                <path d="M11 11l3.5 3.5" strokeLinecap="round" />
-              </svg>
+              <Search size={16} />
               <input
                 className="spot-input"
                 placeholder="Search folders on your machine…  or paste a /path"
