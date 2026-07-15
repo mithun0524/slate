@@ -154,3 +154,15 @@ export const onPtyCwd = (cb: (p: PtyCwd) => void): Promise<UnlistenFn> =>
 
 export const onIntent = (cb: (ev: IntentEvent) => void): Promise<UnlistenFn> =>
   listen<IntentEvent>("vellum://intent", (e) => cb(e.payload));
+
+export interface ApprovalReq {
+  id: string;
+  title: string;
+  detail: string;
+}
+
+export const onApproval = (cb: (req: ApprovalReq) => void): Promise<UnlistenFn> =>
+  listen<ApprovalReq>("vellum://approval", (e) => cb(e.payload));
+
+export const resolveApproval = (id: string, approved: boolean): Promise<void> =>
+  invoke("resolve_approval", { id, approved });

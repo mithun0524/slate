@@ -10,11 +10,15 @@ import { StatusBar } from "./components/StatusBar";
 import { CommandPalette } from "./components/CommandPalette";
 import { SettingsDrawer } from "./components/SettingsDrawer";
 import { Welcome } from "./components/Welcome";
+import { ApprovalPrompt } from "./components/ApprovalPrompt";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
 import {
+  onApproval,
   onIntent,
   onPtyCwd,
   openWorkspace,
+  resolveApproval,
+  type ApprovalReq,
   type IntentSource,
   type ViewIntent,
 } from "./lib/ipc";
@@ -47,6 +51,7 @@ function App() {
 
   const [terms, setTerms] = useState<Term[]>([{ id: "t1", title: "Terminal 1" }]);
   const [activeTerm, setActiveTerm] = useState("t1");
+  const [approvals, setApprovals] = useState<ApprovalReq[]>([]);
 
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
@@ -123,6 +128,22 @@ function App() {
       p.then((off) => off());
     };
   }, [repoint]);
+
+  // Agent approval requests (round-trip over the override socket).
+  useEffect(() => {
+    const p = onApproval((req) => setApprovals((q) => [...q, req]));
+    return () => {
+      p.then((off) => off());
+    };
+  }, []);
+
+  const decideApproval = useCallback((approved: boolean) => {
+    setApprovals((q) => {
+      const [first, ...rest] = q;
+      if (first) resolveApproval(first.id, approved).catch(() => {});
+      return rest;
+    });
+  }, []);
 
   // Global shortcuts: ⌘K / ⌘⇧P palette, Esc closes overlays.
   useEffect(() => {
@@ -254,6 +275,10 @@ function App() {
         onTheme={() => setSettingsOpen(true)}
         onSettings={() => setSettingsOpen(true)}
       />
+
+      {approvals[0] && (
+        <ApprovalPrompt req={approvals[0]} onDecide={decideApproval} />
+      )}
 
       {paletteOpen && (
         <CommandPalette

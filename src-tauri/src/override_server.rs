@@ -1,25 +1,40 @@
-//! Agent override channel.
+//! Agent channel: a line-oriented TCP server on 127.0.0.1.
 //!
-//! A tiny line-oriented TCP server on 127.0.0.1. A Claude Code hook (or any
-//! tool) can force Pane B to a view by sending one JSON `ViewIntent` per line:
+//! Two message shapes (one JSON object per line):
+//!   • View override — force Panel B to a view:
+//!       {"kind":"tree"}   {"kind":"spec","path":"X.md"}   {"kind":"diff","paths":[]}
+//!   • Approval request — ask the human, block for the answer:
+//!       {"approval":{"id":"a1","title":"Ship these changes?","detail":"3 files"}}
+//!     The server holds the connection open and writes back one line:
+//!       {"approved":true}   (or false on reject / 180s timeout)
 //!
-//! ```sh
-//! echo '{"kind":"tree"}'                | nc 127.0.0.1 8477
-//! echo '{"kind":"spec","path":"X.md"}'  | nc 127.0.0.1 8477
-//! echo '{"kind":"diff","paths":[]}'     | nc 127.0.0.1 8477
-//! ```
-//!
-//! Failures here never block the app — if the port is taken we simply log and
-//! fall back to classifier-only behaviour.
+//! Failures never block the app — if the port is taken we log and fall back to
+//! classifier-only behaviour.
 
 use crate::types::{IntentEvent, IntentSource, ViewIntent};
-use std::io::{BufRead, BufReader};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
-use tauri::{AppHandle, Emitter};
+use std::sync::mpsc::{channel, Sender};
+use std::sync::Mutex;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager};
 
 pub const PORT: u16 = 8477;
 
-/// Bind the override socket and serve forever on a background thread.
+/// Pending approvals awaiting a human decision, keyed by request id.
+#[derive(Default)]
+pub struct ApprovalRegistry(pub Mutex<HashMap<String, Sender<bool>>>);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalRequest {
+    pub id: String,
+    pub title: String,
+    #[serde(default)]
+    pub detail: String,
+}
+
 pub fn start(app: AppHandle) {
     std::thread::spawn(move || {
         let listener = match TcpListener::bind(("127.0.0.1", PORT)) {
@@ -34,10 +49,9 @@ pub fn start(app: AppHandle) {
                 Ok(s) => s,
                 Err(_) => continue,
             };
-            // Handle each connection on its own thread so a client that holds
-            // the socket open never blocks subsequent overrides.
             let app = app.clone();
             std::thread::spawn(move || {
+                let mut writer = stream.try_clone().ok();
                 let reader = BufReader::new(stream);
                 for line in reader.lines() {
                     let line = match line {
@@ -48,20 +62,48 @@ pub fn start(app: AppHandle) {
                     if trimmed.is_empty() {
                         continue;
                     }
-                    match serde_json::from_str::<ViewIntent>(trimmed) {
-                        Ok(intent) => {
-                            let _ = app.emit(
-                                "vellum://intent",
-                                IntentEvent {
-                                    intent,
-                                    source: IntentSource::Override,
-                                },
-                            );
+                    let val: serde_json::Value = match serde_json::from_str(trimmed) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            eprintln!("[vellum] bad payload: {e}");
+                            continue;
                         }
-                        Err(e) => eprintln!("[vellum] bad override payload: {e}"),
+                    };
+
+                    // Approval request?
+                    if let Some(ap) = val.get("approval") {
+                        if let Ok(req) = serde_json::from_value::<ApprovalRequest>(ap.clone()) {
+                            let approved = await_decision(&app, req);
+                            if let Some(w) = writer.as_mut() {
+                                let _ = writeln!(w, "{{\"approved\":{approved}}}");
+                                let _ = w.flush();
+                            }
+                            continue;
+                        }
+                    }
+
+                    // Otherwise treat as a view override.
+                    if let Ok(intent) = serde_json::from_value::<ViewIntent>(val) {
+                        let _ = app.emit(
+                            "vellum://intent",
+                            IntentEvent { intent, source: IntentSource::Override },
+                        );
                     }
                 }
             });
         }
     });
+}
+
+/// Register the request, notify the UI, and block until a decision (or timeout).
+fn await_decision(app: &AppHandle, req: ApprovalRequest) -> bool {
+    let (tx, rx) = channel::<bool>();
+    let reg = app.state::<ApprovalRegistry>();
+    reg.0.lock().unwrap().insert(req.id.clone(), tx);
+
+    let _ = app.emit("vellum://approval", req.clone());
+
+    let decision = rx.recv_timeout(Duration::from_secs(180)).unwrap_or(false);
+    reg.0.lock().unwrap().remove(&req.id);
+    decision
 }

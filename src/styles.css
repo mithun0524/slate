@@ -2402,6 +2402,97 @@ body {
   animation: spin 0.7s linear infinite;
 }
 
+/* ============ agent approval prompt ============ */
+.approval {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, 92vw);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 26px 64px -18px rgba(0, 0, 0, 0.75);
+  z-index: 120;
+  animation: fadeUp 0.24s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.approval-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.approval-body {
+  flex: 1;
+  min-width: 0;
+}
+.approval-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--fg-dim);
+  margin-bottom: 4px;
+}
+.approval-title {
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+}
+.approval-detail {
+  color: var(--fg-mut);
+  font-size: 12px;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.approval-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.approval-reject,
+.approval-approve {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+.approval-reject {
+  background: transparent;
+  color: var(--fg-mut);
+}
+.approval-reject:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+.approval-approve {
+  background: var(--accent);
+  color: #141416;
+  border-color: var(--accent);
+}
+.approval-approve:hover {
+  filter: brightness(1.08);
+}
+.approval-kbd {
+  font-size: 10px;
+  opacity: 0.7;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
 /* ============ motion ============ */
 @keyframes fadeUp {
   from {

@@ -615,11 +615,24 @@ fn read_asset(state: State<AppState>, path: String) -> Result<String, String> {
     Ok(format!("data:{};base64,{}", mime, STANDARD.encode(bytes)))
 }
 
+/// Resolve a pending agent approval request with the human's decision.
+#[tauri::command]
+fn resolve_approval(
+    reg: State<override_server::ApprovalRegistry>,
+    id: String,
+    approved: bool,
+) {
+    if let Some(tx) = reg.0.lock().unwrap().remove(&id) {
+        let _ = tx.send(approved);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
+        .manage(override_server::ApprovalRegistry::default())
         .setup(|app| {
             override_server::start(app.handle().clone());
             Ok(())
@@ -647,7 +660,8 @@ pub fn run() {
             search_dirs,
             search_text,
             clone_repo,
-            create_project
+            create_project,
+            resolve_approval
         ])
         .run(tauri::generate_context!())
         .expect("error while running vellum");
