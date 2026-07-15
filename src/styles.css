@@ -591,6 +591,12 @@ body {
   opacity: 0.35;
   line-height: 1;
 }
+.empty-svg {
+  width: 54px;
+  height: 54px;
+  color: var(--fg-dim);
+  opacity: 0.4;
+}
 
 /* ============ markdown ============ */
 .md-view .markdown-body {

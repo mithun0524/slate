@@ -47,8 +47,20 @@ export function SpecView({
           <MarkdownView path={active} refreshKey={refreshKey} />
         ) : (
           <div className="view-empty">
-            <div className="empty-glyph">◆</div>
-            Select a spec from the explorer.
+            <svg
+              className="empty-svg"
+              viewBox="0 0 48 48"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinejoin="round"
+              strokeLinecap="round"
+            >
+              <path d="M12 5h16l8 8v30H12z" />
+              <path d="M28 5v8h8" />
+              <path d="M17 24h14M17 30h14M17 36h9" />
+            </svg>
+            <span>Select a spec from the explorer</span>
           </div>
         )}
       </div>
