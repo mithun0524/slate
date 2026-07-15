@@ -157,7 +157,7 @@ export function SourceControl({
             ✓ Commit
           </button>
           <button className="scm-commit-more" onClick={() => setMenu((v) => !v)}>
-            ⌄
+            <ChevronDown size={15} />
           </button>
           {menu && (
             <div className="scm-menu" onMouseLeave={() => setMenu(false)}>
