@@ -70,6 +70,12 @@ pub fn start(app: AppHandle) {
                         }
                     };
 
+                    // Agent narration note?
+                    if let Some(note) = val.get("note").and_then(|v| v.as_str()) {
+                        let _ = app.emit("vellum://note", note.to_string());
+                        continue;
+                    }
+
                     // Approval request?
                     if let Some(ap) = val.get("approval") {
                         if let Ok(req) = serde_json::from_value::<ApprovalRequest>(ap.clone()) {

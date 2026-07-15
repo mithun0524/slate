@@ -13,12 +13,14 @@ import { Welcome } from "./components/Welcome";
 import { ApprovalPrompt } from "./components/ApprovalPrompt";
 import { type ActivityEntry } from "./components/ActivityFeed";
 import { ReplayView } from "./components/ReplayView";
+import { MessageSquare } from "lucide-react";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
 import {
   gitDiff,
   gitHeadInfo,
   onApproval,
   onApprovalExpired,
+  onNote,
   onIntent,
   onPtyCwd,
   openWorkspace,
@@ -59,6 +61,7 @@ function App() {
   const [approvals, setApprovals] = useState<ApprovalReq[]>([]);
   const [history, setHistory] = useState<ActivityEntry[]>([]);
   const [replay, setReplay] = useState<ActivityEntry | null>(null);
+  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]);
   const entryId = useRef(0);
 
   const pinnedRef = useRef(pinned);
@@ -165,6 +168,21 @@ function App() {
     return () => {
       p1.then((off) => off());
       p2.then((off) => off());
+    };
+  }, []);
+
+  // Agent narration notes → toast + logged in the activity feed.
+  useEffect(() => {
+    const p = onNote((text) => {
+      const id = ++entryId.current;
+      setHistory((h) =>
+        [{ id, note: text, source: "override" as const, at: Date.now() }, ...h].slice(0, 300),
+      );
+      setToasts((t) => [...t, { id, text }]);
+      window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
+    });
+    return () => {
+      p.then((off) => off());
     };
   }, []);
 
@@ -309,7 +327,7 @@ function App() {
                     history={history}
                     onReplay={(entry) => {
                       if (entry.patch !== undefined) setReplay(entry);
-                      else apply(entry.intent, "manual");
+                      else if (entry.intent) apply(entry.intent, "manual");
                     }}
                     onClearHistory={() => setHistory([])}
                   />
@@ -330,6 +348,17 @@ function App() {
         onTheme={() => setSettingsOpen(true)}
         onSettings={() => setSettingsOpen(true)}
       />
+
+      {toasts.length > 0 && (
+        <div className="toasts">
+          {toasts.map((t) => (
+            <div className="toast" key={t.id}>
+              <MessageSquare size={14} />
+              <span>{t.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {approvals[0] && (
         <ApprovalPrompt req={approvals[0]} onDecide={decideApproval} />

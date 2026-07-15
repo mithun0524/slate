@@ -3099,6 +3099,48 @@ body.dragging-split * {
   color: var(--accent);
 }
 
+/* agent note entries + toasts */
+.act-item.note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 14px 8px 14px;
+}
+.act-note {
+  display: block;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.toasts {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 110;
+  max-width: 400px;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--fg);
+  font-size: 12.5px;
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+  animation: fadeUp 0.25s ease both;
+}
+.toast svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
 /* scrollbars */
 ::-webkit-scrollbar {
   width: 11px;

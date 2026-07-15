@@ -181,3 +181,6 @@ export const resolveApproval = (id: string, approved: boolean): Promise<void> =>
 
 export const onApprovalExpired = (cb: (id: string) => void): Promise<UnlistenFn> =>
   listen<string>("vellum://approval-expired", (e) => cb(e.payload));
+
+export const onNote = (cb: (text: string) => void): Promise<UnlistenFn> =>
+  listen<string>("vellum://note", (e) => cb(e.payload));

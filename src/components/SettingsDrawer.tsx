@@ -49,12 +49,18 @@ export function SettingsDrawer({
         <div className="drawer-section">
           <div className="drawer-title">Agent override</div>
           <p className="drawer-note">
-            An agent (or hook) can force Panel B to a view by sending one JSON
-            line to the local socket:
+            An agent (or hook) drives Slate by sending one JSON line to the
+            local socket on port {OVERRIDE_PORT}:
           </p>
-          <pre className="drawer-code">{`echo '{"kind":"tree"}' | nc 127.0.0.1 ${OVERRIDE_PORT}
-echo '{"kind":"spec","path":"README.md"}' | nc 127.0.0.1 ${OVERRIDE_PORT}
-echo '{"kind":"diff","paths":[]}' | nc 127.0.0.1 ${OVERRIDE_PORT}`}</pre>
+          <pre className="drawer-code">{`# force a view
+echo '{"kind":"tree"}'                     | nc 127.0.0.1 ${OVERRIDE_PORT}
+echo '{"kind":"spec","path":"README.md"}'  | nc 127.0.0.1 ${OVERRIDE_PORT}
+
+# narrate (toast + activity log)
+echo '{"note":"refactored the parser"}'    | nc 127.0.0.1 ${OVERRIDE_PORT}
+
+# ask for approval (blocks, prints {"approved":bool})
+echo '{"approval":{"id":"a1","title":"Ship?","detail":"3 files"}}' | nc 127.0.0.1 ${OVERRIDE_PORT}`}</pre>
         </div>
 
         <div className="drawer-section">

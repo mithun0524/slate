@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquare } from "lucide-react";
 import { Icon } from "./ActivityBar";
 import type { FileChange, IntentSource, ViewIntent } from "../lib/ipc";
 
 export interface ActivityEntry {
   id: number;
-  intent: ViewIntent;
+  intent?: ViewIntent;
   source: IntentSource;
   at: number;
   burst?: FileChange[];
@@ -13,6 +13,8 @@ export interface ActivityEntry {
   patch?: string;
   /** Branch/HEAD label at event time. */
   head?: string;
+  /** Agent narration note (no intent). */
+  note?: string;
 }
 
 function rel(ms: number): string {
@@ -95,7 +97,28 @@ export function ActivityFeed({
       ) : (
         <div className="act-scroll">
           {history.map((e, idx) => {
-            const d = describe(e.intent);
+            if (e.note !== undefined) {
+              return (
+                <div className="act-row" key={idx}>
+                  <div className="act-item note">
+                    <span className="act-rail">
+                      <span className="act-dot src-override" />
+                    </span>
+                    <span className="act-ic">
+                      <MessageSquare size={15} />
+                    </span>
+                    <span className="act-body">
+                      <span className="act-note">{e.note}</span>
+                      <span className="act-meta">
+                        <span className="act-src src-override">agent</span>
+                        <span className="act-time">{rel(e.at)}</span>
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              );
+            }
+            const d = describe(e.intent!);
             const hasBurst = !!e.burst && e.burst.length > 0;
             const isOpen = open.has(idx);
             return (
