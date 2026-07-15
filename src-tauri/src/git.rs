@@ -1,7 +1,7 @@
 //! Thin, read-only wrappers over `git2` for the tree and diff views.
 
-use crate::types::TreeEntry;
-use git2::{Delta, DiffFormat, DiffOptions, Repository, Status, StatusOptions};
+use crate::types::{CommitInfo, TreeEntry};
+use git2::{Delta, Diff, DiffFormat, DiffOptions, Oid, Repository, Sort, Status, StatusOptions};
 use std::path::Path;
 
 /// Is `path` inside a git repository?
@@ -68,6 +68,11 @@ pub fn diff(path: &Path, paths: &[String]) -> Result<String, String> {
             .map_err(|e| e.to_string())?,
     };
 
+    print_patch(&diff)
+}
+
+/// Render a `git2::Diff` to unified-patch text.
+fn print_patch(diff: &Diff) -> Result<String, String> {
     let mut buf = String::new();
     diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
         match line.origin() {
@@ -78,8 +83,57 @@ pub fn diff(path: &Path, paths: &[String]) -> Result<String, String> {
         true
     })
     .map_err(|e| e.to_string())?;
-
     Ok(buf)
+}
+
+/// The most recent commits (newest first), for the timeline view.
+pub fn log(path: &Path, limit: usize) -> Result<Vec<CommitInfo>, String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+
+    // No HEAD yet (fresh repo) -> empty timeline, not an error.
+    if repo.head().is_err() {
+        return Ok(Vec::new());
+    }
+
+    let mut walk = repo.revwalk().map_err(|e| e.to_string())?;
+    walk.push_head().map_err(|e| e.to_string())?;
+    walk.set_sorting(Sort::TIME).map_err(|e| e.to_string())?;
+
+    let mut out = Vec::new();
+    for oid in walk.flatten() {
+        if out.len() >= limit {
+            break;
+        }
+        let commit = match repo.find_commit(oid) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        let author = commit.author();
+        let hash = oid.to_string();
+        out.push(CommitInfo {
+            short: hash.chars().take(7).collect(),
+            hash,
+            summary: commit.summary().unwrap_or("").to_string(),
+            author: author.name().unwrap_or("").to_string(),
+            email: author.email().unwrap_or("").to_string(),
+            time: commit.time().seconds(),
+        });
+    }
+    Ok(out)
+}
+
+/// The patch introduced by a single commit (vs its first parent).
+pub fn commit_diff(path: &Path, hash: &str) -> Result<String, String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let oid = Oid::from_str(hash).map_err(|e| e.to_string())?;
+    let commit = repo.find_commit(oid).map_err(|e| e.to_string())?;
+    let tree = commit.tree().map_err(|e| e.to_string())?;
+    let parent_tree = commit.parent(0).ok().and_then(|p| p.tree().ok());
+
+    let diff = repo
+        .diff_tree_to_tree(parent_tree.as_ref(), Some(&tree), None)
+        .map_err(|e| e.to_string())?;
+    print_patch(&diff)
 }
 
 fn status_label(s: Status) -> String {

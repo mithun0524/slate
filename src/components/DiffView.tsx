@@ -26,7 +26,7 @@ interface Part {
 }
 
 // ---- unified-diff parser ----
-function parseDiff(patch: string): FileDiff[] {
+export function parseDiff(patch: string): FileDiff[] {
   const files: FileDiff[] = [];
   let file: FileDiff | null = null;
   let hunk: Hunk | null = null;
@@ -249,7 +249,7 @@ function HunkSplit({ h }: { h: Hunk }) {
   );
 }
 
-function FileBlock({ file, mode }: { file: FileDiff; mode: Mode }) {
+export function FileBlock({ file, mode }: { file: FileDiff; mode: Mode }) {
   const [open, setOpen] = useState(true);
   const name = file.path.split("/").pop();
   const dir = file.path.split("/").slice(0, -1).join("/");

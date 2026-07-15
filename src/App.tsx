@@ -169,6 +169,12 @@ function App() {
                 >
                   Diff
                 </button>
+                <button
+                  className={`seg ${intent.kind === "log" ? "on" : ""}`}
+                  onClick={() => apply({ kind: "log" }, "manual")}
+                >
+                  Log
+                </button>
               </div>
               <div className="toolbar-right">
                 {!isRepo && <span className="badge warn">no git</span>}

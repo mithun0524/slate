@@ -7,7 +7,17 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 export type ViewIntent =
   | { kind: "spec"; path: string }
   | { kind: "diff"; paths: string[] }
-  | { kind: "tree" };
+  | { kind: "tree" }
+  | { kind: "log" };
+
+export interface CommitInfo {
+  hash: string;
+  short: string;
+  summary: string;
+  author: string;
+  email: string;
+  time: number;
+}
 
 export type IntentSource = "classifier" | "override";
 
@@ -48,6 +58,12 @@ export const readAsset = (path: string): Promise<string> =>
   invoke("read_asset", { path });
 
 export const listSpecs = (): Promise<string[]> => invoke("list_specs");
+
+export const gitLog = (limit: number): Promise<CommitInfo[]> =>
+  invoke("git_log", { limit });
+
+export const gitCommitDiff = (hash: string): Promise<string> =>
+  invoke("git_commit_diff", { hash });
 
 // --- events ---
 

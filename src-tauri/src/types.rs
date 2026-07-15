@@ -36,6 +36,8 @@ pub enum ViewIntent {
     Diff { paths: Vec<String> },
     /// Show the git source tree.
     Tree,
+    /// Show the commit timeline.
+    Log,
 }
 
 /// Where a `ViewIntent` came from — for debugging / UI hinting.
@@ -53,6 +55,18 @@ pub enum IntentSource {
 pub struct IntentEvent {
     pub intent: ViewIntent,
     pub source: IntentSource,
+}
+
+/// A commit for the timeline view.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommitInfo {
+    pub hash: String,
+    pub short: String,
+    pub summary: String,
+    pub author: String,
+    pub email: String,
+    /// Author time, unix seconds.
+    pub time: i64,
 }
 
 /// One entry in the git status listing (flat; the frontend builds the tree).

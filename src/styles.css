@@ -879,6 +879,117 @@ body {
   min-width: 0;
 }
 
+/* ============ timeline ============ */
+.tl-scroll {
+  overflow: auto;
+  padding: 8px 0 24px;
+}
+.tl-item {
+  position: relative;
+}
+.tl-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.tl-row:hover .tl-body {
+  background: var(--bg-2);
+}
+.tl-rail {
+  position: relative;
+  width: 40px;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+}
+.tl-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+.tl-item:first-child .tl-rail::before {
+  top: 18px;
+}
+.tl-item:last-child .tl-rail::before {
+  bottom: auto;
+  height: 18px;
+}
+.tl-dot {
+  position: relative;
+  margin-top: 14px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--bg-1);
+  border: 2px solid var(--accent);
+  z-index: 1;
+}
+.tl-item.open .tl-dot {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(226, 178, 60, 0.6);
+}
+.tl-body {
+  flex: 1;
+  min-width: 0;
+  margin: 4px 12px 4px 0;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+}
+.tl-item.open .tl-body {
+  background: var(--bg-2);
+  border-color: var(--border);
+}
+.tl-summary {
+  display: block;
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+.tl-hash {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0 6px;
+  border-radius: 4px;
+}
+.tl-author {
+  color: var(--fg-mut);
+}
+.tl-expand {
+  margin: 2px 12px 12px 52px;
+}
+.commit-diff {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.commit-loading {
+  padding: 14px;
+  color: var(--fg-dim);
+  font-style: italic;
+  font-size: 12px;
+}
+
 /* scrollbars */
 ::-webkit-scrollbar {
   width: 11px;
