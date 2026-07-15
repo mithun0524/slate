@@ -24,9 +24,10 @@ export function Terminal() {
       fontSize: 13,
       cursorBlink: true,
       theme: {
-        background: "#0b0e14",
-        foreground: "#c9d1d9",
-        cursor: "#e0b341",
+        background: "#1e1e1e",
+        foreground: "#cccccc",
+        cursor: "#e2b23c",
+        selectionBackground: "#264f78",
       },
     });
     const fit = new FitAddon();
