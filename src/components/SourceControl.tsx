@@ -22,13 +22,15 @@ const LETTER: Record<string, string> = {
 };
 
 const I = {
-  plus: "M8 3v10M3 8h10",
-  minus: "M3 8h10",
-  discard: "M4 7V3.5M4 7h3.5M4 7a5 5 0 11-1 3",
-  diff: "M5 3v7M2.5 6.5h5M9 6h5m-2.5-2.5l2.5 2.5-2.5 2.5",
+  plus: "M8 3.4v9.2M3.4 8h9.2",
+  minus: "M3.4 8h9.2",
+  // counter-clockwise revert arrow
+  discard: "M4.2 6.6V3.8M4.2 6.6H7M12 9a4.2 4.2 0 10-1.4 3.1",
+  // open file / view changes (arrow out of a page)
+  open: "M8 3H4a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V8M9.5 3H13v3.5M13 3L7.5 8.5",
 };
 const Act = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
@@ -55,7 +57,7 @@ function Row({
       <span className="scm-dir">{dir}</span>
       <span className="scm-actions" onClick={(ev) => ev.stopPropagation()}>
         <button className="scm-act" title="Open changes" onClick={() => onSelect(e.path)}>
-          <Act d={I.diff} />
+          <Act d={I.open} />
         </button>
         {onDiscard && (
           <button className="scm-act" title="Discard changes" onClick={() => onDiscard(e.path)}>
