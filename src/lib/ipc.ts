@@ -44,6 +44,9 @@ export const gitDiff = (paths: string[]): Promise<string> =>
 export const readText = (path: string): Promise<string> =>
   invoke("read_text", { path });
 
+export const readAsset = (path: string): Promise<string> =>
+  invoke("read_asset", { path });
+
 // --- events ---
 
 export const onPtyData = (cb: (chunk: string) => void): Promise<UnlistenFn> =>

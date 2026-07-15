@@ -134,6 +134,55 @@ fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
     std::fs::read_to_string(&full).map_err(|e| e.to_string())
 }
 
+/// Read a workspace image and return it as a `data:` URL, so relative `<img>`
+/// paths in a rendered README (which the webview cannot fetch) still display.
+#[tauri::command]
+fn read_asset(state: State<AppState>, path: String) -> Result<String, String> {
+    use base64::{engine::general_purpose::STANDARD, Engine};
+
+    let root = state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no workspace open")?;
+
+    let candidate = if PathBuf::from(&path).is_absolute() {
+        PathBuf::from(&path)
+    } else {
+        root.join(&path)
+    };
+    let full = candidate.canonicalize().map_err(|e| e.to_string())?;
+    if !full.starts_with(&root) {
+        return Err("path escapes workspace".into());
+    }
+    const MAX: u64 = 8 * 1024 * 1024;
+    let meta = std::fs::metadata(&full).map_err(|e| e.to_string())?;
+    if meta.len() > MAX {
+        return Err("asset too large".into());
+    }
+
+    let mime = match full
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_ascii_lowercase())
+        .as_deref()
+    {
+        Some("png") => "image/png",
+        Some("jpg") | Some("jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("svg") => "image/svg+xml",
+        Some("webp") => "image/webp",
+        Some("avif") => "image/avif",
+        Some("ico") => "image/x-icon",
+        Some("bmp") => "image/bmp",
+        _ => "application/octet-stream",
+    };
+
+    let bytes = std::fs::read(&full).map_err(|e| e.to_string())?;
+    Ok(format!("data:{};base64,{}", mime, STANDARD.encode(bytes)))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -150,7 +199,8 @@ pub fn run() {
             pty_resize,
             git_tree,
             git_diff,
-            read_text
+            read_text,
+            read_asset
         ])
         .run(tauri::generate_context!())
         .expect("error while running vellum");
