@@ -1323,6 +1323,18 @@ body {
   white-space: pre;
 }
 
+/* file-type icons */
+.fi {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  display: block;
+}
+.tree-row .fi,
+.spec-row .fi {
+  margin-right: 1px;
+}
+
 /* scrollbars */
 ::-webkit-scrollbar {
   width: 11px;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { listSpecs } from "../lib/ipc";
+import { FileIcon } from "./FileIcon";
 
 interface Node {
   name: string;
@@ -61,6 +62,7 @@ function Row({
             onClick={() => toggle(node.path)}
           >
             <span className={`chev ${isOpen ? "open" : ""}`}>▸</span>
+            <FileIcon name={node.name} dir open={isOpen} />
             <span className="spec-folder">{node.name}</span>
           </div>
         ) : (
@@ -70,7 +72,7 @@ function Row({
             onClick={() => onSelect(node.path)}
             title={node.path}
           >
-            <span className="spec-icon">◆</span>
+            <FileIcon name={node.name} />
             <span className="spec-name">{node.name}</span>
           </div>
         ))}

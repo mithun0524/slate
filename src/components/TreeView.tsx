@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { gitTree, type TreeEntry } from "../lib/ipc";
+import { FileIcon } from "./FileIcon";
 
 interface Node {
   name: string;
@@ -67,7 +68,8 @@ function NodeRow({
           style={{ paddingLeft: 10 + depth * 15 }}
           onClick={() => !isDir && onSelect(node.path)}
         >
-          <span className="tree-glyph">{isDir ? "▸" : ""}</span>
+          {isDir && <span className="tree-glyph">▾</span>}
+          <FileIcon name={node.name} dir={isDir} open={isDir} />
           <span className="tree-name">{node.name}</span>
           {node.status && node.status !== "clean" && (
             <span className={`tree-chip st-${node.status}`}>
