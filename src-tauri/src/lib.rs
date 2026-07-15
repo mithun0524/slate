@@ -178,6 +178,56 @@ fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
     std::fs::read_to_string(&full).map_err(|e| e.to_string())
 }
 
+/// Clone a git repo (via the user's `git`, so their creds/ssh work) into
+/// `parent/<name>` and return the created path.
+#[tauri::command]
+fn clone_repo(url: String, parent: String) -> Result<String, String> {
+    let url = url.trim();
+    if url.is_empty() {
+        return Err("empty url".into());
+    }
+    let name = url
+        .trim_end_matches('/')
+        .rsplit('/')
+        .next()
+        .unwrap_or("repo")
+        .trim_end_matches(".git");
+    if name.is_empty() {
+        return Err("could not derive repo name".into());
+    }
+    let dest = PathBuf::from(&parent).join(name);
+    if dest.exists() {
+        return Err(format!("{name} already exists in that folder"));
+    }
+    let out = std::process::Command::new("git")
+        .args(["clone", url, &dest.to_string_lossy()])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !out.status.success() {
+        return Err(String::from_utf8_lossy(&out.stderr).trim().to_string());
+    }
+    Ok(dest.to_string_lossy().into_owned())
+}
+
+/// Create a new folder under `parent`, `git init` it, and return its path.
+#[tauri::command]
+fn create_project(parent: String, name: String) -> Result<String, String> {
+    let name = name.trim();
+    if name.is_empty() || name.contains('/') || name.contains("..") {
+        return Err("invalid project name".into());
+    }
+    let dest = PathBuf::from(&parent).join(name);
+    if dest.exists() {
+        return Err("a folder with that name already exists".into());
+    }
+    std::fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
+    let _ = std::process::Command::new("git")
+        .args(["init"])
+        .current_dir(&dest)
+        .output();
+    Ok(dest.to_string_lossy().into_owned())
+}
+
 /// Spotlight-style directory search. Uses macOS `mdfind` to find folders whose
 /// name matches `query`, ranked toward shallow, home-rooted, project-looking
 /// dirs. Empty for very short queries. Never errors — returns [] on any trouble.
@@ -386,7 +436,9 @@ pub fn run() {
             read_text,
             read_asset,
             list_specs,
-            search_dirs
+            search_dirs,
+            clone_repo,
+            create_project
         ])
         .run(tauri::generate_context!())
         .expect("error while running vellum");

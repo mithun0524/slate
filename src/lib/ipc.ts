@@ -65,6 +65,12 @@ export const listSpecs = (): Promise<string[]> => invoke("list_specs");
 export const searchDirs = (query: string): Promise<string[]> =>
   invoke("search_dirs", { query });
 
+export const cloneRepo = (url: string, parent: string): Promise<string> =>
+  invoke("clone_repo", { url, parent });
+
+export const createProject = (parent: string, name: string): Promise<string> =>
+  invoke("create_project", { parent, name });
+
 export interface HeadInfo {
   branch: string;
   ahead: number;
