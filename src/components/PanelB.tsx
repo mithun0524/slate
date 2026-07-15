@@ -26,7 +26,7 @@ export function PanelB({
     case "log":
       return <TimelineView refreshKey={seq} />;
     case "search":
-      return <SearchView onSelectFile={onSelectFile} />;
+      return <SearchView />;
     case "tree":
     default:
       return <SourceControl refreshKey={seq} onSelect={onSelectFile} onChanged={onGitChanged} />;
