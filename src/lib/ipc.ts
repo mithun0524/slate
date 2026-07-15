@@ -62,6 +62,9 @@ export const readAsset = (path: string): Promise<string> =>
 
 export const listSpecs = (): Promise<string[]> => invoke("list_specs");
 
+export const searchDirs = (query: string): Promise<string[]> =>
+  invoke("search_dirs", { query });
+
 export interface HeadInfo {
   branch: string;
   ahead: number;

@@ -156,6 +156,98 @@ body {
   font-family: var(--font-mono);
   font-size: 12px;
 }
+
+/* spotlight gate search */
+.spot {
+  margin-top: 4px;
+}
+.spot-search {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 0 15px;
+}
+.spot-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.spot-search svg {
+  width: 16px;
+  height: 16px;
+  color: var(--fg-dim);
+  flex: 0 0 auto;
+}
+.spot-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 13px 0;
+  color: var(--fg);
+  font-size: 15px;
+  font-family: inherit;
+}
+.spot-input:focus {
+  outline: none;
+}
+.spot-list {
+  margin-top: 10px;
+  max-height: 320px;
+  overflow: auto;
+}
+.spot-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--fg-dim);
+  padding: 6px 8px 6px;
+}
+.spot-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  padding: 8px 11px;
+  cursor: pointer;
+}
+.spot-row.sel {
+  background: var(--accent-soft);
+}
+.spot-name {
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 500;
+  flex: 0 0 auto;
+  max-width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spot-row.sel .spot-name {
+  color: var(--accent);
+}
+.spot-path {
+  flex: 1;
+  color: var(--fg-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+.spot-empty {
+  padding: 16px 8px;
+  color: var(--fg-dim);
+  font-style: italic;
+  font-size: 13px;
+}
 .recents {
   margin-top: 24px;
   border-top: 1px solid var(--border-soft);

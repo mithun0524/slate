@@ -9,10 +9,12 @@ import { StatusBar } from "./components/StatusBar";
 import { CommandPalette } from "./components/CommandPalette";
 import { SettingsDrawer } from "./components/SettingsDrawer";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
+import { FileIcon } from "./components/FileIcon";
 import {
   onIntent,
   onPtyCwd,
   openWorkspace,
+  searchDirs,
   type IntentSource,
   type ViewIntent,
 } from "./lib/ipc";
@@ -44,6 +46,9 @@ function App() {
       return [];
     }
   });
+  const [results, setResults] = useState<string[]>([]);
+  const [sel, setSel] = useState(0);
+  const searchTimer = useRef<number | undefined>(undefined);
 
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
@@ -128,6 +133,35 @@ function App() {
     }
   };
 
+  const onQuery = (v: string) => {
+    setPath(v);
+    setSel(0);
+    window.clearTimeout(searchTimer.current);
+    if (v.trim().length >= 2) {
+      searchTimer.current = window.setTimeout(() => {
+        searchDirs(v)
+          .then(setResults)
+          .catch(() => setResults([]));
+      }, 160);
+    } else {
+      setResults([]);
+    }
+  };
+
+  const gateKey = (e: React.KeyboardEvent, list: string[]) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSel((s) => Math.min(s + 1, list.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSel((s) => Math.max(s - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (list[sel]) openWith(list[sel]);
+      else if (path.trim()) openWith(path);
+    }
+  };
+
   const onSelectFile = (p: string) => {
     if (/\.(md|markdown)$/i.test(p)) apply({ kind: "spec", path: p }, "manual");
     else apply({ kind: "diff", paths: [p] }, "manual");
@@ -150,6 +184,8 @@ function App() {
           : "changes";
 
   if (!opened) {
+    const showResults = path.trim().length >= 2;
+    const list = showResults ? results : recents;
     return (
       <div className="gate">
         <div className="gate-card">
@@ -158,31 +194,43 @@ function App() {
           <button className="btn primary big" onClick={browse}>
             Open folder…
           </button>
-          <div className="gate-or">or paste a path</div>
-          <div className="gate-row">
-            <input
-              className="gate-input"
-              placeholder="/Users/you/project"
-              value={path}
-              onChange={(e) => setPath(e.currentTarget.value)}
-              onKeyDown={(e) => e.key === "Enter" && openWith(path)}
-              autoFocus
-            />
-            <button className="btn" onClick={() => openWith(path)} disabled={!path.trim()}>
-              Open
-            </button>
-          </div>
-          {recents.length > 0 && (
-            <div className="recents">
-              <div className="recents-title">Recent</div>
-              {recents.map((r) => (
-                <button key={r} className="recent-row" onClick={() => openWith(r)} title={r}>
-                  <span className="recent-name">{r.split("/").pop() || r}</span>
-                  <span className="recent-path">{r}</span>
-                </button>
-              ))}
+          <div className="gate-or">or search your machine</div>
+          <div className="spot">
+            <div className="spot-search">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <circle cx="7" cy="7" r="4.5" />
+                <path d="M11 11l3.5 3.5" strokeLinecap="round" />
+              </svg>
+              <input
+                className="spot-input"
+                placeholder="Search folders by name…  or paste a /path"
+                value={path}
+                onChange={(e) => onQuery(e.currentTarget.value)}
+                onKeyDown={(e) => gateKey(e, list)}
+                autoFocus
+              />
             </div>
-          )}
+            {list.length > 0 ? (
+              <div className="spot-list">
+                {!showResults && <div className="spot-head">Recent</div>}
+                {list.map((p, i) => (
+                  <button
+                    key={p}
+                    className={`spot-row ${i === sel ? "sel" : ""}`}
+                    onMouseEnter={() => setSel(i)}
+                    onClick={() => openWith(p)}
+                    title={p}
+                  >
+                    <FileIcon name={p} dir open={false} />
+                    <span className="spot-name">{p.split("/").pop() || p}</span>
+                    <span className="spot-path">{p}</span>
+                  </button>
+                ))}
+              </div>
+            ) : showResults ? (
+              <div className="spot-empty">No matching folders</div>
+            ) : null}
+          </div>
           {openErr && <div className="gate-err">{openErr}</div>}
         </div>
       </div>

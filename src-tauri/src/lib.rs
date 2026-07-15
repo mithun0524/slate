@@ -178,6 +178,81 @@ fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
     std::fs::read_to_string(&full).map_err(|e| e.to_string())
 }
 
+/// Spotlight-style directory search. Uses macOS `mdfind` to find folders whose
+/// name matches `query`, ranked toward shallow, home-rooted, project-looking
+/// dirs. Empty for very short queries. Never errors — returns [] on any trouble.
+#[tauri::command]
+fn search_dirs(query: String) -> Vec<String> {
+    let q = query.trim();
+    if q.len() < 2 {
+        return Vec::new();
+    }
+    let safe: String = q.chars().filter(|c| *c != '"' && *c != '\'').collect();
+    let expr = format!(
+        "kMDItemFSName == \"*{safe}*\"c && kMDItemContentTypeTree == \"public.folder\""
+    );
+
+    let output = match std::process::Command::new("mdfind").arg(&expr).output() {
+        Ok(o) => o,
+        Err(_) => return Vec::new(),
+    };
+    let text = String::from_utf8_lossy(&output.stdout);
+
+    const NOISE: &[&str] = &[
+        "/node_modules/",
+        "/.git/",
+        "/Library/",
+        "/.Trash",
+        "/.cargo/",
+        "/.rustup/",
+        "/target/",
+        "/.npm/",
+        "/dist/",
+        "/.cache/",
+    ];
+    let home = std::env::var("HOME").unwrap_or_default();
+    let ql = safe.to_ascii_lowercase();
+
+    let mut scored: Vec<(i32, String)> = Vec::new();
+    for line in text.lines() {
+        if line.is_empty() || NOISE.iter().any(|n| line.contains(n)) {
+            continue;
+        }
+        let path = std::path::Path::new(line);
+        if !path.is_dir() {
+            continue;
+        }
+        let base = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+
+        let mut score = 0;
+        if base == ql {
+            score += 100;
+        } else if base.starts_with(&ql) {
+            score += 60;
+        } else if base.contains(&ql) {
+            score += 30;
+        }
+        if !home.is_empty() && line.starts_with(&home) {
+            score += 20;
+        }
+        if path.join(".git").exists() {
+            score += 40; // looks like a project
+        }
+        score -= line.matches('/').count() as i32; // prefer shallower
+        scored.push((score, line.to_string()));
+
+        if scored.len() >= 400 {
+            break; // cap work
+        }
+    }
+    scored.sort_by(|a, b| b.0.cmp(&a.0));
+    scored.into_iter().take(24).map(|(_, p)| p).collect()
+}
+
 /// Directory names never descended into when listing specs.
 const SPEC_IGNORED: &[&str] = &[
     ".git",
@@ -310,7 +385,8 @@ pub fn run() {
             git_commit_diff,
             read_text,
             read_asset,
-            list_specs
+            list_specs,
+            search_dirs
         ])
         .run(tauri::generate_context!())
         .expect("error while running vellum");
