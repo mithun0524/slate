@@ -309,6 +309,17 @@ body {
   height: 100%;
   width: 100%;
 }
+.split.dragging {
+  user-select: none;
+  cursor: col-resize;
+}
+.split.dragging * {
+  user-select: none;
+  pointer-events: none;
+}
+.split.dragging .split-divider {
+  pointer-events: auto;
+}
 .split-pane {
   height: 100%;
   overflow: hidden;

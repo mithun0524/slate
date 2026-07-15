@@ -30,20 +30,26 @@ export function SplitPane({
     [min, max],
   );
 
-  const startDrag = useCallback(
-    (e: React.PointerEvent) => {
-      dragging.current = true;
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    },
-    [],
-  );
+  const [active, setActive] = useState(false);
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    dragging.current = true;
+    setActive(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, []);
+
+  const endDrag = useCallback(() => {
+    dragging.current = false;
+    setActive(false);
+  }, []);
 
   return (
     <div
-      className="split"
+      className={`split ${active ? "dragging" : ""}`}
       ref={containerRef}
       onPointerMove={(e) => dragging.current && onMove(e.clientX)}
-      onPointerUp={() => (dragging.current = false)}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
     >
       <div className="split-pane" style={{ width: `${ratio * 100}%` }}>
         {left}
