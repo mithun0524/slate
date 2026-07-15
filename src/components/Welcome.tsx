@@ -113,12 +113,27 @@ export function Welcome({
 
   return (
     <div className="welcome">
-      <div className="wl-inner">
-        <div className="wl-head wl-anim">
-          <div className="wl-logo">◆</div>
-          <h1 className="wl-brand">Vellum</h1>
-          <p className="wl-tag">terminal + reactive spec / git surface</p>
-        </div>
+      <div className="wl-topbar">
+        <button className="wl-searchpill" onClick={() => setMode("search")}>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <circle cx="7" cy="7" r="4.5" />
+            <path d="M11 11l3.5 3.5" strokeLinecap="round" />
+          </svg>
+          Search projects…
+        </button>
+      </div>
+
+      <div className="wl-center">
+        <div className="wl-inner">
+          <div className="wl-head wl-anim">
+            <svg className="wl-logo" viewBox="0 0 40 40" fill="none">
+              <path d="M20 3 L35 11 L20 19 L5 11 Z" fill="#e8e8ea" />
+              <path d="M5 11 L20 19 L20 37 L5 29 Z" fill="#86868b" />
+              <path d="M35 11 L20 19 L20 37 L35 29 Z" fill="#b6b6bb" />
+            </svg>
+            <h1 className="wl-brand">Vellum</h1>
+            <p className="wl-tag">terminal + reactive spec / git surface</p>
+          </div>
 
         {mode === "home" && (
           <>
@@ -262,7 +277,13 @@ export function Welcome({
           </div>
         )}
 
-        {err && <div className="gate-err">{err}</div>}
+          {err && <div className="gate-err">{err}</div>}
+        </div>
+      </div>
+
+      <div className="wl-bottombar">
+        <span>Vellum</span>
+        <span>local · reactive</span>
       </div>
 
       {busy && (

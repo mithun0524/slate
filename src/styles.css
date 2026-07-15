@@ -9,13 +9,13 @@
   --border-soft: #242424;
 
   /* ink */
-  --fg: #cccccc;
+  --fg: #e4e4e6;
   --fg-mut: #9d9d9d;
   --fg-dim: #6e6e6e;
 
-  /* accent — vellum gold (warm accent on neutral gray) */
-  --accent: #e2b23c;
-  --accent-soft: rgba(226, 178, 60, 0.13);
+  /* accent — neutral silver (premium, colorless) */
+  --accent: #d6d6d9;
+  --accent-soft: rgba(255, 255, 255, 0.07);
 
   /* semantic diff/status */
   --add: #4ac26b;
@@ -1630,16 +1630,66 @@ body {
 .welcome {
   position: relative;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(1100px 620px at 50% 34%, #232323 0%, transparent 62%),
+    var(--bg);
+}
+.wl-topbar {
+  height: 40px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-soft);
+  -webkit-app-region: drag;
+}
+.wl-searchpill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, 50vw);
+  height: 25px;
+  padding: 0 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+.wl-searchpill:hover {
+  background: var(--bg-3);
+  border-color: var(--fg-dim);
+}
+.wl-searchpill svg {
+  width: 13px;
+  height: 13px;
+}
+.wl-center {
+  flex: 1;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: auto;
-  background:
-    radial-gradient(1000px 560px at 50% -8%, #262626 0%, transparent 68%),
-    var(--bg);
+}
+.wl-bottombar {
+  height: 24px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--fg-dim);
+  font-size: 11px;
 }
 .wl-inner {
-  width: min(600px, 90vw);
-  padding: 48px 0;
+  width: min(560px, 90vw);
+  padding: 24px 0 60px;
 }
 .wl-head {
   margin-bottom: 26px;
@@ -1649,18 +1699,18 @@ body {
   text-align: center;
 }
 .wl-logo {
-  font-size: 26px;
-  color: var(--accent);
-  line-height: 1;
-  margin-bottom: 8px;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
 }
 .wl-brand {
   margin: 0;
-  font-size: 34px;
+  font-size: 32px;
   font-weight: 800;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
   line-height: 1;
-  background: linear-gradient(120deg, var(--accent), #f4dc9a);
+  background: linear-gradient(180deg, #ffffff 0%, #9a9aa0 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1682,20 +1732,22 @@ body {
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
-  min-height: 94px;
-  background: var(--bg-2);
+  gap: 20px;
+  min-height: 96px;
+  background: linear-gradient(180deg, #212123 0%, #1a1a1c 100%);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 15px 16px;
+  border-radius: 13px;
+  padding: 16px 17px;
   cursor: pointer;
-  transition: background 0.16s, border-color 0.16s, transform 0.16s, box-shadow 0.16s;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 0.16s, transform 0.16s, box-shadow 0.16s;
 }
 .wl-card:hover {
-  background: var(--bg-3);
-  border-color: var(--fg-dim);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  border-color: #3a3a3d;
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 30px -12px rgba(0, 0, 0, 0.7);
 }
 .wl-card:active {
   transform: translateY(0);
@@ -1704,13 +1756,14 @@ body {
   color: var(--fg-mut);
 }
 .wl-card-ic svg {
-  width: 20px;
-  height: 20px;
+  width: 19px;
+  height: 19px;
 }
 .wl-card-title {
   color: var(--fg);
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: -0.1px;
 }
 
 .wl-recent-head {
