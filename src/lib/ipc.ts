@@ -72,6 +72,9 @@ export const readText = (path: string): Promise<string> =>
 export const readAsset = (path: string): Promise<string> =>
   invoke("read_asset", { path });
 
+export const writeText = (path: string, content: string): Promise<void> =>
+  invoke("write_text", { path, content });
+
 export const listSpecs = (): Promise<string[]> => invoke("list_specs");
 
 export const searchDirs = (query: string): Promise<string[]> =>
@@ -111,6 +114,15 @@ export const gitLog = (limit: number): Promise<CommitInfo[]> =>
 
 export const gitCommitDiff = (hash: string): Promise<string> =>
   invoke("git_commit_diff", { hash });
+
+export const gitStage = (paths: string[]): Promise<void> =>
+  invoke("git_stage", { paths });
+
+export const gitUnstage = (paths: string[]): Promise<void> =>
+  invoke("git_unstage", { paths });
+
+export const gitCommit = (message: string): Promise<string> =>
+  invoke("git_commit", { message });
 
 // --- events ---
 

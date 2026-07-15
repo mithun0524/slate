@@ -2,7 +2,31 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import MarkdownIt from "markdown-it";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
-import { readAsset, readText } from "../lib/ipc";
+import { readAsset, readText, writeText } from "../lib/ipc";
+
+// Turn GitHub task-list items into interactive checkboxes carrying their index.
+function injectTasks(src: string): string {
+  let ti = 0;
+  return src.replace(
+    /^(\s*[-*] )\[([ xX])\](\s+.*)$/gm,
+    (_m, pre: string, mark: string, rest: string) => {
+      const checked = mark.toLowerCase() === "x";
+      const idx = ti++;
+      return `${pre}<input type="checkbox" class="task-cb" data-ti="${idx}"${checked ? " checked" : ""}/>${rest}`;
+    },
+  );
+}
+
+// Flip the Nth task marker in the raw source.
+function flipTask(src: string, target: number): string {
+  let ti = 0;
+  return src.replace(/^(\s*[-*] )\[([ xX])\]/gm, (m, pre: string, mark: string) => {
+    const idx = ti++;
+    if (idx !== target) return m;
+    const nc = mark.toLowerCase() === "x" ? " " : "x";
+    return `${pre}[${nc}]`;
+  });
+}
 
 const md = new MarkdownIt({
   // Render embedded HTML (README logos, shields badges, <p align>, tables).
@@ -46,8 +70,24 @@ export function MarkdownView({
     // shown* spec re-reads it (same path would otherwise skip the effect).
   }, [path, refreshKey]);
 
-  const html = useMemo(() => md.render(raw), [raw]);
+  const html = useMemo(() => md.render(injectTasks(raw)), [raw]);
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  // Wire task-list checkboxes: toggle -> flip source line -> write file.
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+    const cbs = Array.from(body.querySelectorAll<HTMLInputElement>("input.task-cb"));
+    const onToggle = (e: Event) => {
+      const el = e.currentTarget as HTMLInputElement;
+      const ti = Number(el.getAttribute("data-ti"));
+      const next = flipTask(raw, ti);
+      setRaw(next); // optimistic
+      writeText(path, next).catch(() => setRaw(raw)); // revert on failure
+    };
+    cbs.forEach((cb) => cb.addEventListener("change", onToggle));
+    return () => cbs.forEach((cb) => cb.removeEventListener("change", onToggle));
+  }, [html, raw, path]);
 
   // The webview can't fetch workspace-relative <img> paths. After render,
   // resolve them (relative to the spec file's directory) to data: URLs.

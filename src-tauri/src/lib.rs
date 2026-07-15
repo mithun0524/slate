@@ -142,6 +142,24 @@ fn git_log(state: State<AppState>, limit: u32) -> Result<Vec<CommitInfo>, String
 }
 
 #[tauri::command]
+fn git_stage(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
+    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    git::stage(&root, &paths)
+}
+
+#[tauri::command]
+fn git_unstage(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
+    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    git::unstage(&root, &paths)
+}
+
+#[tauri::command]
+fn git_commit(state: State<AppState>, message: String) -> Result<String, String> {
+    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    git::commit(&root, &message)
+}
+
+#[tauri::command]
 fn git_commit_diff(state: State<AppState>, hash: String) -> Result<String, String> {
     let root = state
         .workspace
@@ -468,6 +486,24 @@ fn list_specs(state: State<AppState>) -> Result<Vec<String>, String> {
     Ok(out)
 }
 
+/// Write text back to a file inside the workspace (spec checkbox toggles).
+#[tauri::command]
+fn write_text(state: State<AppState>, path: String, content: String) -> Result<(), String> {
+    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    let candidate = if PathBuf::from(&path).is_absolute() {
+        PathBuf::from(&path)
+    } else {
+        root.join(&path)
+    };
+    // Confine to the workspace: the parent dir must resolve inside root.
+    let parent = candidate.parent().ok_or("bad path")?;
+    let parent_real = parent.canonicalize().map_err(|e| e.to_string())?;
+    if !parent_real.starts_with(&root) {
+        return Err("path escapes workspace".into());
+    }
+    std::fs::write(&candidate, content).map_err(|e| e.to_string())
+}
+
 /// Read a workspace image and return it as a `data:` URL, so relative `<img>`
 /// paths in a rendered README (which the webview cannot fetch) still display.
 #[tauri::command]
@@ -536,8 +572,12 @@ pub fn run() {
             git_branch,
             git_head_info,
             git_log,
+            git_stage,
+            git_unstage,
+            git_commit,
             git_commit_diff,
             read_text,
+            write_text,
             read_asset,
             list_specs,
             search_dirs,

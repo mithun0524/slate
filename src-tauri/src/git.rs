@@ -88,6 +88,64 @@ fn print_patch(diff: &Diff) -> Result<String, String> {
     Ok(buf)
 }
 
+/// Stage the given (repo-relative) paths. Handles deletions.
+pub fn stage(path: &Path, paths: &[String]) -> Result<(), String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let workdir = repo.workdir().ok_or("bare repo")?.to_path_buf();
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    for p in paths {
+        let rel = std::path::Path::new(p);
+        if workdir.join(p).exists() {
+            index.add_path(rel).map_err(|e| e.to_string())?;
+        } else {
+            index.remove_path(rel).map_err(|e| e.to_string())?;
+        }
+    }
+    index.write().map_err(|e| e.to_string())
+}
+
+/// Unstage the given (repo-relative) paths (reset index entry to HEAD).
+pub fn unstage(path: &Path, paths: &[String]) -> Result<(), String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    // Keep the HEAD reference bound so the peeled object doesn't outlive a temp.
+    if let Ok(head_ref) = repo.head() {
+        if let Ok(obj) = head_ref.peel(git2::ObjectType::Commit) {
+            return repo
+                .reset_default(Some(&obj), paths.iter())
+                .map_err(|e| e.to_string());
+        }
+    }
+    // No commits yet: unstage == remove from index.
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    for p in paths {
+        let _ = index.remove_path(std::path::Path::new(p));
+    }
+    index.write().map_err(|e| e.to_string())
+}
+
+/// Commit the staged index with `message`. Returns the new short hash.
+pub fn commit(path: &Path, message: &str) -> Result<String, String> {
+    if message.trim().is_empty() {
+        return Err("commit message is empty".into());
+    }
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let sig = repo
+        .signature()
+        .map_err(|_| "set git user.name and user.email first".to_string())?;
+
+    let mut index = repo.index().map_err(|e| e.to_string())?;
+    let tree_oid = index.write_tree().map_err(|e| e.to_string())?;
+    let tree = repo.find_tree(tree_oid).map_err(|e| e.to_string())?;
+
+    let parent = repo.head().ok().and_then(|h| h.peel_to_commit().ok());
+    let parents: Vec<&git2::Commit> = parent.iter().collect();
+
+    let oid = repo
+        .commit(Some("HEAD"), &sig, &sig, message, &tree, &parents)
+        .map_err(|e| e.to_string())?;
+    Ok(oid.to_string().chars().take(7).collect())
+}
+
 /// Current branch name (or a short detached-HEAD label). Empty if no HEAD yet.
 pub fn branch(path: &Path) -> Result<String, String> {
     let repo = Repository::discover(path).map_err(|e| e.to_string())?;

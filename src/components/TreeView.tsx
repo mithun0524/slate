@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { gitTree, type TreeEntry } from "../lib/ipc";
+import { gitCommit, gitStage, gitTree, gitUnstage, type TreeEntry } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
 
 interface Node {
@@ -18,11 +18,7 @@ function buildTree(entries: TreeEntry[]): Node {
     parts.forEach((part, i) => {
       let next = cur.children.get(part);
       if (!next) {
-        next = {
-          name: part,
-          path: parts.slice(0, i + 1).join("/"),
-          children: new Map(),
-        };
+        next = { name: part, path: parts.slice(0, i + 1).join("/"), children: new Map() };
         cur.children.set(part, next);
       }
       cur = next;
@@ -34,24 +30,20 @@ function buildTree(entries: TreeEntry[]): Node {
 }
 
 const STATUS_MARK: Record<string, string> = {
-  new: "A",
-  untracked: "U",
-  modified: "M",
-  deleted: "D",
-  renamed: "R",
-  typechange: "T",
-  conflicted: "!",
-  clean: "",
+  new: "A", untracked: "U", modified: "M", deleted: "D",
+  renamed: "R", typechange: "T", conflicted: "!", clean: "",
 };
 
 function NodeRow({
   node,
   depth,
   onSelect,
+  onToggleStage,
 }: {
   node: Node;
   depth: number;
   onSelect: (path: string) => void;
+  onToggleStage: (path: string, staged: boolean) => void;
 }) {
   const isDir = node.children.size > 0;
   const kids = [...node.children.values()].sort((a, b) => {
@@ -71,11 +63,23 @@ function NodeRow({
           {isDir && <span className="tree-glyph">▾</span>}
           <FileIcon name={node.name} dir={isDir} open={isDir} />
           <span className="tree-name">{node.name}</span>
-          {node.status && node.status !== "clean" && (
-            <span className={`tree-chip st-${node.status}`}>
-              {node.staged && <span className="staged-dot" />}
-              {STATUS_MARK[node.status] ?? "?"}
-            </span>
+          {!isDir && node.status && node.status !== "clean" && (
+            <>
+              <button
+                className="tree-stage"
+                title={node.staged ? "Unstage" : "Stage"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleStage(node.path, !!node.staged);
+                }}
+              >
+                {node.staged ? "−" : "+"}
+              </button>
+              <span className={`tree-chip st-${node.status}`}>
+                {node.staged && <span className="staged-dot" />}
+                {STATUS_MARK[node.status] ?? "?"}
+              </span>
+            </>
           )}
         </div>
       )}
@@ -85,13 +89,13 @@ function NodeRow({
           node={k}
           depth={node.name ? depth + 1 : depth}
           onSelect={onSelect}
+          onToggleStage={onToggleStage}
         />
       ))}
     </>
   );
 }
 
-// Pane B / tree view: git-status source tree with a change summary header.
 export function TreeView({
   refreshKey,
   onSelect,
@@ -101,6 +105,9 @@ export function TreeView({
 }) {
   const [entries, setEntries] = useState<TreeEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [msg, setMsg] = useState("");
+  const [bump, setBump] = useState(0);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -110,7 +117,7 @@ export function TreeView({
     return () => {
       alive = false;
     };
-  }, [refreshKey]);
+  }, [refreshKey, bump]);
 
   const tree = useMemo(() => buildTree(entries), [entries]);
   const summary = useMemo(() => {
@@ -119,24 +126,67 @@ export function TreeView({
     return s;
   }, [entries]);
 
+  const toggleStage = (path: string, staged: boolean) => {
+    const p = staged ? gitUnstage([path]) : gitStage([path]);
+    p.then(() => setBump((b) => b + 1)).catch((e) => setNote(String(e)));
+  };
+  const stageAll = () => {
+    const unstaged = entries.filter((e) => !e.staged).map((e) => e.path);
+    if (!unstaged.length) return;
+    gitStage(unstaged).then(() => setBump((b) => b + 1)).catch((e) => setNote(String(e)));
+  };
+  const commit = () => {
+    if (!msg.trim() || summary.staged === 0) return;
+    gitCommit(msg.trim())
+      .then((hash) => {
+        setMsg("");
+        setNote(`committed ${hash}`);
+        setBump((b) => b + 1);
+      })
+      .catch((e) => setNote(String(e)));
+  };
+
   return (
     <div className="view tree-view">
       <div className="view-crumb">
         <span className="crumb-label">source · changes</span>
         {entries.length > 0 && (
           <span className="crumb-stat">
-            {summary.staged > 0 && (
-              <span className="pill staged">{summary.staged} staged</span>
-            )}
+            {summary.staged > 0 && <span className="pill staged">{summary.staged} staged</span>}
             <span className="pill">{summary.changed} changed</span>
           </span>
         )}
       </div>
+
+      {entries.length > 0 && (
+        <div className="commit-bar">
+          <input
+            className="commit-input"
+            placeholder="Commit message…"
+            value={msg}
+            onChange={(e) => setMsg(e.currentTarget.value)}
+            onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === "Enter" && commit()}
+          />
+          <button className="commit-stageall" title="Stage all" onClick={stageAll}>
+            +
+          </button>
+          <button
+            className="commit-btn"
+            onClick={commit}
+            disabled={!msg.trim() || summary.staged === 0}
+            title={summary.staged === 0 ? "Stage files first" : "Commit staged"}
+          >
+            Commit
+          </button>
+        </div>
+      )}
+      {note && <div className="commit-note">{note}</div>}
+
       {err ? (
         <div className="view-empty">{err}</div>
       ) : entries.length > 0 ? (
         <div className="tree-scroll">
-          <NodeRow node={tree} depth={0} onSelect={onSelect} />
+          <NodeRow node={tree} depth={0} onSelect={onSelect} onToggleStage={toggleStage} />
         </div>
       ) : (
         <div className="view-empty">
