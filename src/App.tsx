@@ -3,7 +3,7 @@ import { SplitPane } from "./components/SplitPane";
 import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
 import { type ActItem } from "./components/ActivityBar";
-import { ViewMenu } from "./components/ViewMenu";
+import { ViewTabs } from "./components/ViewTabs";
 import { TitleBar } from "./components/TitleBar";
 import { StatusBar } from "./components/StatusBar";
 import { CommandPalette } from "./components/CommandPalette";
@@ -173,7 +173,7 @@ function App() {
           left={<Terminal themeId={theme} />}
           right={
             <div className="panel-b">
-              <ViewMenu active={active} onSelect={navigate} />
+              <ViewTabs active={active} onSelect={navigate} />
               <div className="panel-body">
                 <PanelB intent={intent} seq={seq} onSelectFile={onSelectFile} />
               </div>
