@@ -1506,6 +1506,114 @@ body {
   white-space: pre;
 }
 
+/* view-switcher menu (top of right pane) */
+.view-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+  flex: 0 0 auto;
+}
+.vm-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  cursor: pointer;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.vm-button:hover {
+  background: var(--bg-hover);
+}
+.vm-button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--fg-mut);
+}
+.vm-chev {
+  color: var(--fg-dim);
+  font-size: 10px;
+  transition: transform 0.15s;
+}
+.vm-chev.open {
+  transform: rotate(180deg);
+}
+.vm-search {
+  background: transparent;
+  border: none;
+  color: var(--fg-mut);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+}
+.vm-search:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.vm-search svg {
+  width: 16px;
+  height: 16px;
+}
+.vm-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 8px;
+  min-width: 224px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 14px 36px -8px rgba(0, 0, 0, 0.6);
+  padding: 5px;
+  z-index: 60;
+}
+.vm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.vm-item:hover {
+  background: var(--bg-hover);
+}
+.vm-item.on {
+  color: var(--accent);
+}
+.vm-item svg {
+  width: 16px;
+  height: 16px;
+}
+.vm-label {
+  flex: 1;
+}
+.vm-kbd {
+  font-size: 10px;
+  color: var(--fg-dim);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.vm-divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 4px 6px;
+}
+
 /* file-type icons */
 .fi {
   width: 15px;

@@ -4,6 +4,7 @@ import { SplitPane } from "./components/SplitPane";
 import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
 import { ActivityBar, type ActItem } from "./components/ActivityBar";
+import { ViewMenu } from "./components/ViewMenu";
 import { TitleBar } from "./components/TitleBar";
 import { StatusBar } from "./components/StatusBar";
 import { CommandPalette } from "./components/CommandPalette";
@@ -251,7 +252,10 @@ function App() {
           left={<Terminal themeId={theme} />}
           right={
             <div className="panel-b">
-              <PanelB intent={intent} seq={seq} onSelectFile={onSelectFile} />
+              <ViewMenu active={active} onSelect={navigate} onSearch={() => setPaletteOpen(true)} />
+              <div className="panel-body">
+                <PanelB intent={intent} seq={seq} onSelectFile={onSelectFile} />
+              </div>
             </div>
           }
         />

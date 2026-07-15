@@ -35,7 +35,7 @@ const ICONS: Record<string, ReactNode> = {
   ),
 };
 
-function Icon({ name }: { name: string }) {
+export function Icon({ name }: { name: string }) {
   return (
     <svg
       viewBox="0 0 20 20"
