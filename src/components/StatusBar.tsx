@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { gitHeadInfo, gitTree, type HeadInfo } from "../lib/ipc";
+import { agentRunning, gitHeadInfo, gitTree, type HeadInfo } from "../lib/ipc";
 import type { IntentSource } from "../lib/ipc";
 
 type Source = IntentSource | "manual";
@@ -28,6 +28,22 @@ export function StatusBar({
 }) {
   const [head, setHead] = useState<HeadInfo>({ branch: "", ahead: 0, behind: 0 });
   const [changes, setChanges] = useState(0);
+  const [agent, setAgent] = useState(false);
+
+  // Poll for a running agent (Claude Code) under the terminal.
+  useEffect(() => {
+    let alive = true;
+    const tick = () =>
+      agentRunning()
+        .then((r) => alive && setAgent(r))
+        .catch(() => {});
+    tick();
+    const id = window.setInterval(tick, 4000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isRepo) {
@@ -70,6 +86,12 @@ export function StatusBar({
           </>
         ) : (
           <span className="sb-item warn">not a git repo</span>
+        )}
+        {agent && (
+          <span className="sb-item agent" title="Claude Code is running">
+            <span className="agent-dot" />
+            agent
+          </span>
         )}
       </div>
       <div className="sb-right">

@@ -61,6 +61,8 @@ export const ptyWrite = (data: string): Promise<void> =>
 export const ptyResize = (cols: number, rows: number): Promise<void> =>
   invoke("pty_resize", { cols, rows });
 
+export const agentRunning = (): Promise<boolean> => invoke("agent_running");
+
 export const gitTree = (): Promise<TreeEntry[]> => invoke("git_tree");
 
 export const gitDiff = (paths: string[]): Promise<string> =>

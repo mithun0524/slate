@@ -213,6 +213,7 @@ pub struct PtySession {
     master: Box<dyn portable_pty::MasterPty + Send>,
     writer: Box<dyn Write + Send>,
     killer: Box<dyn ChildKiller + Send + Sync>,
+    pub pid: Option<u32>,
 }
 
 impl Drop for PtySession {
@@ -239,6 +240,7 @@ impl PtySession {
         drop(pair.slave);
 
         let killer = child.clone_killer();
+        let pid = child.process_id();
 
         let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
         let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
@@ -274,6 +276,7 @@ impl PtySession {
             master: pair.master,
             writer,
             killer,
+            pid,
         })
     }
 

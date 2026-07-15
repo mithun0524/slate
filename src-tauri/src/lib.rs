@@ -22,6 +22,7 @@ struct AppState {
     pty: Mutex<Option<PtySession>>,
     workspace: Mutex<Option<PathBuf>>,
     watcher: Mutex<Option<RecommendedWatcher>>,
+    shell_pid: Mutex<Option<u32>>,
 }
 
 fn home_dir() -> PathBuf {
@@ -64,8 +65,60 @@ fn pty_spawn(
         .clone()
         .unwrap_or_else(home_dir);
     let session = PtySession::spawn(&app, &cwd, cols.max(1), rows.max(1))?;
+    *state.shell_pid.lock().unwrap() = session.pid;
     *state.pty.lock().unwrap() = Some(session);
     Ok(())
+}
+
+/// Heuristic: is an agent (Claude Code) running under the terminal's shell?
+/// Walks the process tree from the shell pid and looks for a "claude" process.
+#[tauri::command]
+fn agent_running(state: State<AppState>) -> bool {
+    let shell = match *state.shell_pid.lock().unwrap() {
+        Some(p) => p,
+        None => return false,
+    };
+    let out = match std::process::Command::new("ps")
+        .args(["-axo", "pid=,ppid=,args="])
+        .output()
+    {
+        Ok(o) => o,
+        Err(_) => return false,
+    };
+    let text = String::from_utf8_lossy(&out.stdout);
+
+    // Build ppid -> [(pid, args)] and pid -> args.
+    let mut children: std::collections::HashMap<u32, Vec<u32>> = std::collections::HashMap::new();
+    let mut args_of: std::collections::HashMap<u32, String> = std::collections::HashMap::new();
+    for line in text.lines() {
+        let mut it = line.trim().splitn(3, char::is_whitespace);
+        let (Some(pid), Some(ppid), Some(args)) = (it.next(), it.next(), it.next()) else {
+            continue;
+        };
+        if let (Ok(pid), Ok(ppid)) = (pid.parse::<u32>(), ppid.parse::<u32>()) {
+            children.entry(ppid).or_default().push(pid);
+            args_of.insert(pid, args.to_string());
+        }
+    }
+
+    // DFS descendants of the shell; match a claude process.
+    let mut stack = vec![shell];
+    let mut seen = std::collections::HashSet::new();
+    while let Some(pid) = stack.pop() {
+        if !seen.insert(pid) {
+            continue;
+        }
+        if let Some(args) = args_of.get(&pid) {
+            let a = args.to_ascii_lowercase();
+            if pid != shell && (a.contains("claude") || a.contains("claude-code")) {
+                return true;
+            }
+        }
+        if let Some(kids) = children.get(&pid) {
+            stack.extend(kids);
+        }
+    }
+    false
 }
 
 #[tauri::command]
@@ -567,6 +620,7 @@ pub fn run() {
             pty_spawn,
             pty_write,
             pty_resize,
+            agent_running,
             git_tree,
             git_diff,
             git_branch,

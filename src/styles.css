@@ -1271,6 +1271,21 @@ body {
   width: 13px;
   height: 13px;
 }
+.sb-item.agent {
+  color: var(--add);
+}
+.agent-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--add);
+  box-shadow: 0 0 6px rgba(74, 194, 107, 0.7);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
 
 .shell-main {
   grid-area: main;
@@ -1519,7 +1534,7 @@ body {
 /* horizontal icon-tab strip (top of right pane) */
 .view-tabs {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   gap: 3px;
   padding: 6px 8px;

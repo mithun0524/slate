@@ -33,6 +33,8 @@ export function CommandPalette({
   onTogglePin,
   onOpenSettings,
   onSetTheme,
+  onOpenFolder,
+  onCloseWorkspace,
 }: {
   onClose: () => void;
   onNavigate: (id: ActItem) => void;
@@ -40,6 +42,8 @@ export function CommandPalette({
   onTogglePin: () => void;
   onOpenSettings: () => void;
   onSetTheme: (id: ThemeId) => void;
+  onOpenFolder: () => void;
+  onCloseWorkspace: () => void;
 }) {
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(0);
@@ -63,6 +67,9 @@ export function CommandPalette({
       { id: "go-changes", label: "Go to Changes", hint: "view", run: wrap(() => onNavigate("changes")) },
       { id: "go-diff", label: "Go to Diff", hint: "view", run: wrap(() => onNavigate("diff")) },
       { id: "go-timeline", label: "Go to Timeline", hint: "view", run: wrap(() => onNavigate("timeline")) },
+      { id: "go-search", label: "Go to Search", hint: "view", run: wrap(() => onNavigate("search")) },
+      { id: "open-folder", label: "Open Folder…", hint: "workspace", run: wrap(onOpenFolder) },
+      { id: "close-ws", label: "Close Workspace", hint: "workspace", run: wrap(onCloseWorkspace) },
       { id: "pin", label: "Toggle Pin", hint: "action", run: wrap(onTogglePin) },
       { id: "settings", label: "Open Settings", hint: "action", run: wrap(onOpenSettings) },
       ...THEMES.map((t) => ({
@@ -82,7 +89,7 @@ export function CommandPalette({
       })),
     ];
     return base;
-  }, [specs, onClose, onNavigate, onOpenSpec, onTogglePin, onOpenSettings, onSetTheme]);
+  }, [specs, onClose, onNavigate, onOpenSpec, onTogglePin, onOpenSettings, onSetTheme, onOpenFolder, onCloseWorkspace]);
 
   const filtered = useMemo(() => {
     return commands

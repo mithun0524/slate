@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { SplitPane } from "./components/SplitPane";
 import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
@@ -128,14 +129,29 @@ function App() {
       setWsPath(target);
       setIsRepo(repo);
       setOpened(true);
-      const next = [target, ...recents.filter((r) => r !== target)].slice(0, 6);
+      const next = [target, ...recents.filter((r) => r !== target)].slice(0, 12);
       setRecents(next);
       localStorage.setItem("vellum.recents", JSON.stringify(next));
+      localStorage.setItem("slate.last", target);
       apply({ kind: "tree" }, "manual");
     } catch (e) {
       console.error("open failed", e);
     }
   };
+
+  // Reopen the last workspace on launch.
+  useEffect(() => {
+    const last = localStorage.getItem("slate.last");
+    if (last) openWith(last);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const browse = async () => {
+    const s = await openDialog({ directory: true, multiple: false, title: "Open folder" });
+    if (typeof s === "string") openWith(s);
+  };
+
+  const closeWorkspace = () => setOpened(false);
 
   const onSelectFile = (p: string) => {
     if (/\.(md|markdown)$/i.test(p)) apply({ kind: "spec", path: p }, "manual");
@@ -201,6 +217,8 @@ function App() {
           onTogglePin={() => setPinned((v) => !v)}
           onOpenSettings={() => setSettingsOpen(true)}
           onSetTheme={setTheme}
+          onOpenFolder={browse}
+          onCloseWorkspace={closeWorkspace}
         />
       )}
       {settingsOpen && (
