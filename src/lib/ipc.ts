@@ -12,7 +12,9 @@ export type ViewIntent =
   | { kind: "diff"; paths: string[] }
   | { kind: "tree" }
   | { kind: "log" }
-  | { kind: "search" };
+  | { kind: "search" }
+  // frontend-only meta view (never emitted by Rust):
+  | { kind: "activity" };
 
 export interface LineMatch {
   line: number;

@@ -1,4 +1,5 @@
 import {
+  Activity,
   FileText,
   GitBranch,
   GitCompareArrows,
@@ -7,7 +8,13 @@ import {
   Settings,
 } from "lucide-react";
 
-export type ActItem = "specs" | "changes" | "diff" | "timeline" | "search";
+export type ActItem =
+  | "specs"
+  | "changes"
+  | "diff"
+  | "timeline"
+  | "search"
+  | "activity";
 
 const MAP: Record<string, typeof FileText> = {
   specs: FileText,
@@ -15,6 +22,7 @@ const MAP: Record<string, typeof FileText> = {
   diff: GitCompareArrows,
   timeline: History,
   search: Search,
+  activity: Activity,
   settings: Settings,
 };
 

@@ -6,8 +6,9 @@ const ITEMS: { id: ActItem; label: string; kbd: string }[] = [
   { id: "specs", label: "Specs", kbd: "⇧⌘E" },
   { id: "changes", label: "Changes", kbd: "⌃⇧G" },
   { id: "diff", label: "Diff", kbd: "⇧⌘D" },
-  { id: "timeline", label: "Timeline", kbd: "⇧⌘T" },
   { id: "search", label: "Search", kbd: "⇧⌘F" },
+  { id: "activity", label: "Activity", kbd: "⇧⌘A" },
+  { id: "timeline", label: "Timeline", kbd: "⇧⌘T" },
 ];
 
 const MAX_VISIBLE = 5;

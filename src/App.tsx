@@ -11,6 +11,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { SettingsDrawer } from "./components/SettingsDrawer";
 import { Welcome } from "./components/Welcome";
 import { ApprovalPrompt } from "./components/ApprovalPrompt";
+import { type ActivityEntry } from "./components/ActivityFeed";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
 import {
   onApproval,
@@ -53,6 +54,7 @@ function App() {
   const [terms, setTerms] = useState<Term[]>([{ id: "t1", title: "Terminal 1" }]);
   const [activeTerm, setActiveTerm] = useState("t1");
   const [approvals, setApprovals] = useState<ApprovalReq[]>([]);
+  const [history, setHistory] = useState<ActivityEntry[]>([]);
 
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
@@ -110,6 +112,10 @@ function App() {
 
   useEffect(() => {
     const p = onIntent((ev) => {
+      // Log every reactive event (even when pinned) — this is the movie of the work.
+      setHistory((h) =>
+        [{ intent: ev.intent, source: ev.source, at: Date.now() }, ...h].slice(0, 300),
+      );
       if (pinnedRef.current) return;
       apply(ev.intent, ev.source);
     });
@@ -171,6 +177,7 @@ function App() {
           d: { kind: "diff", paths: [] },
           t: { kind: "log" },
           f: { kind: "search" },
+          a: { kind: "activity" },
         };
         const next = map[e.key.toLowerCase()];
         if (next) {
@@ -232,6 +239,7 @@ function App() {
     else if (id === "diff") apply({ kind: "diff", paths: [] }, "manual");
     else if (id === "timeline") apply({ kind: "log" }, "manual");
     else if (id === "search") apply({ kind: "search" }, "manual");
+    else if (id === "activity") apply({ kind: "activity" }, "manual");
   };
 
   const active: ActItem =
@@ -243,7 +251,9 @@ function App() {
           ? "timeline"
           : intent.kind === "search"
             ? "search"
-            : "changes";
+            : intent.kind === "activity"
+              ? "activity"
+              : "changes";
 
   if (!opened) {
     return <Welcome onOpen={openWith} recents={recents} />;
@@ -273,6 +283,9 @@ function App() {
                   seq={seq}
                   onSelectFile={onSelectFile}
                   onGitChanged={() => setSeq((s) => s + 1)}
+                  history={history}
+                  onReplay={(next) => apply(next, "manual")}
+                  onClearHistory={() => setHistory([])}
                 />
               </div>
             </div>

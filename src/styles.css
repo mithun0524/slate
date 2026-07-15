@@ -1077,6 +1077,114 @@ body.dragging-split * {
   min-width: 0;
 }
 
+/* ============ activity feed (reactive log) ============ */
+.act-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 0 16px;
+}
+.act-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.act-item:hover {
+  background: var(--bg-hover);
+}
+.act-rail {
+  width: 10px;
+  display: flex;
+  justify-content: center;
+  padding-top: 5px;
+  flex: 0 0 auto;
+}
+.act-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--fg-dim);
+}
+.act-dot.src-classifier {
+  background: var(--hunk);
+  box-shadow: 0 0 6px rgba(108, 176, 255, 0.6);
+}
+.act-dot.src-override {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-soft);
+}
+.act-ic {
+  color: var(--fg-mut);
+  flex: 0 0 auto;
+  padding-top: 1px;
+}
+.act-ic svg {
+  width: 16px;
+  height: 16px;
+}
+.act-body {
+  flex: 1;
+  min-width: 0;
+}
+.act-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.act-label {
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+.act-sub {
+  color: var(--fg-mut);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.act-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 11px;
+}
+.act-src {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.act-src.src-classifier {
+  color: var(--hunk);
+}
+.act-src.src-override {
+  color: var(--accent);
+}
+.act-src.src-manual {
+  color: var(--fg-dim);
+}
+.act-time {
+  color: var(--fg-dim);
+}
+.act-clear {
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 11px;
+}
+.act-clear:hover {
+  color: var(--fg);
+}
+
 /* ============ timeline ============ */
 .tl-scroll {
   overflow: auto;
