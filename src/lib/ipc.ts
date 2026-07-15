@@ -73,5 +73,8 @@ export const onPtyData = (cb: (chunk: string) => void): Promise<UnlistenFn> =>
 export const onPtyExit = (cb: (code: number) => void): Promise<UnlistenFn> =>
   listen<number>("pty://exit", (e) => cb(e.payload));
 
+export const onPtyCwd = (cb: (dir: string) => void): Promise<UnlistenFn> =>
+  listen<string>("pty://cwd", (e) => cb(e.payload));
+
 export const onIntent = (cb: (ev: IntentEvent) => void): Promise<UnlistenFn> =>
   listen<IntentEvent>("vellum://intent", (e) => cb(e.payload));

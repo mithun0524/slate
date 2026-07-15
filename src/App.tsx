@@ -5,6 +5,7 @@ import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
 import {
   onIntent,
+  onPtyCwd,
   openWorkspace,
   type IntentSource,
   type ViewIntent,
@@ -37,6 +38,10 @@ function App() {
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
 
+  // Current workspace root; used to dedupe cwd events (the shell re-emits its
+  // cwd on every prompt, not only on `cd`).
+  const wsRef = useRef<string>("");
+
   const apply = useCallback((next: ViewIntent, src: Source) => {
     setIntent(next);
     setSource(src);
@@ -54,11 +59,32 @@ function App() {
     };
   }, [apply]);
 
+  // Follow the terminal: when the shell reports a new cwd (OSC 7), re-point the
+  // workspace so Panel B (tree / diff / specs / log) tracks the terminal dir.
+  useEffect(() => {
+    const p = onPtyCwd((dir) => {
+      if (!dir || dir === wsRef.current) return;
+      openWorkspace(dir)
+        .then((repo) => {
+          wsRef.current = dir;
+          setIsRepo(repo);
+          setSeq((s) => s + 1); // refresh whatever view is showing
+        })
+        .catch(() => {
+          /* dir may be unreadable; ignore */
+        });
+    });
+    return () => {
+      p.then((off) => off());
+    };
+  }, []);
+
   const openWith = async (p: string) => {
     const target = p.trim();
     if (!target) return;
     try {
       const repo = await openWorkspace(target);
+      wsRef.current = target;
       setIsRepo(repo);
       setOpened(true);
       setOpenErr(null);
