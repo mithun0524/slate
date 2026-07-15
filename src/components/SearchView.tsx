@@ -27,6 +27,7 @@ export function SearchView({ onSelectFile }: { onSelectFile: (p: string) => void
   const [err, setErr] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const timer = useRef<number | undefined>(undefined);
+  const reqRef = useRef(0);
 
   useEffect(() => {
     window.clearTimeout(timer.current);
@@ -37,16 +38,21 @@ export function SearchView({ onSelectFile }: { onSelectFile: (p: string) => void
     }
     setBusy(true);
     timer.current = window.setTimeout(() => {
+      const myReq = ++reqRef.current;
       searchText(query, cs, ww, rx)
         .then((r) => {
+          if (reqRef.current !== myReq) return; // stale result
           setResults(r);
           setErr(null);
         })
         .catch((e) => {
+          if (reqRef.current !== myReq) return;
           setErr(String(e));
           setResults([]);
         })
-        .finally(() => setBusy(false));
+        .finally(() => {
+          if (reqRef.current === myReq) setBusy(false);
+        });
     }, 200);
     return () => window.clearTimeout(timer.current);
   }, [query, cs, ww, rx]);

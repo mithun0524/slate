@@ -99,11 +99,25 @@ pub fn start(app: AppHandle) {
 fn await_decision(app: &AppHandle, req: ApprovalRequest) -> bool {
     let (tx, rx) = channel::<bool>();
     let reg = app.state::<ApprovalRegistry>();
-    reg.0.lock().unwrap().insert(req.id.clone(), tx);
+    {
+        let mut map = reg.0.lock().unwrap();
+        // Don't clobber an in-flight request with the same id (would reject it).
+        if map.contains_key(&req.id) {
+            return false;
+        }
+        map.insert(req.id.clone(), tx);
+    } // lock released before blocking
 
     let _ = app.emit("vellum://approval", req.clone());
 
-    let decision = rx.recv_timeout(Duration::from_secs(180)).unwrap_or(false);
+    let decision = match rx.recv_timeout(Duration::from_secs(180)) {
+        Ok(v) => v,
+        Err(_) => {
+            // Timed out (or sender dropped): tell the UI to drop the card.
+            let _ = app.emit("vellum://approval-expired", req.id.clone());
+            false
+        }
+    };
     reg.0.lock().unwrap().remove(&req.id);
     decision
 }

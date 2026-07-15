@@ -11,10 +11,12 @@ export function PanelB({
   intent,
   seq,
   onSelectFile,
+  onGitChanged,
 }: {
   intent: ViewIntent;
   seq: number;
   onSelectFile: (path: string) => void;
+  onGitChanged: () => void;
 }) {
   switch (intent.kind) {
     case "spec":
@@ -27,6 +29,6 @@ export function PanelB({
       return <SearchView onSelectFile={onSelectFile} />;
     case "tree":
     default:
-      return <TreeView refreshKey={seq} onSelect={onSelectFile} />;
+      return <TreeView refreshKey={seq} onSelect={onSelectFile} onChanged={onGitChanged} />;
   }
 }

@@ -166,3 +166,6 @@ export const onApproval = (cb: (req: ApprovalReq) => void): Promise<UnlistenFn> 
 
 export const resolveApproval = (id: string, approved: boolean): Promise<void> =>
   invoke("resolve_approval", { id, approved });
+
+export const onApprovalExpired = (cb: (id: string) => void): Promise<UnlistenFn> =>
+  listen<string>("vellum://approval-expired", (e) => cb(e.payload));

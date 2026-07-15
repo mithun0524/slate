@@ -14,6 +14,7 @@ import { ApprovalPrompt } from "./components/ApprovalPrompt";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
 import {
   onApproval,
+  onApprovalExpired,
   onIntent,
   onPtyCwd,
   openWorkspace,
@@ -131,9 +132,13 @@ function App() {
 
   // Agent approval requests (round-trip over the override socket).
   useEffect(() => {
-    const p = onApproval((req) => setApprovals((q) => [...q, req]));
+    const p1 = onApproval((req) => setApprovals((q) => [...q, req]));
+    const p2 = onApprovalExpired((id) =>
+      setApprovals((q) => q.filter((a) => a.id !== id)),
+    );
     return () => {
-      p.then((off) => off());
+      p1.then((off) => off());
+      p2.then((off) => off());
     };
   }, []);
 
@@ -152,6 +157,11 @@ function App() {
       if (mod && (e.key === "k" || (e.shiftKey && e.key.toLowerCase() === "p"))) {
         e.preventDefault();
         setPaletteOpen((v) => !v);
+        return;
+      }
+      // Don't hijack keys while typing (commit box, search, terminal, etc).
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) {
         return;
       }
       if (mod && e.shiftKey) {
@@ -258,7 +268,12 @@ function App() {
             <div className="panel-b">
               <ViewTabs active={active} onSelect={navigate} />
               <div className="panel-body">
-                <PanelB intent={intent} seq={seq} onSelectFile={onSelectFile} />
+                <PanelB
+                  intent={intent}
+                  seq={seq}
+                  onSelectFile={onSelectFile}
+                  onGitChanged={() => setSeq((s) => s + 1)}
+                />
               </div>
             </div>
           }

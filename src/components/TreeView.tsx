@@ -99,14 +99,15 @@ function NodeRow({
 export function TreeView({
   refreshKey,
   onSelect,
+  onChanged,
 }: {
   refreshKey: number;
   onSelect: (path: string) => void;
+  onChanged: () => void;
 }) {
   const [entries, setEntries] = useState<TreeEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
-  const [bump, setBump] = useState(0);
   const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export function TreeView({
     return () => {
       alive = false;
     };
-  }, [refreshKey, bump]);
+  }, [refreshKey]);
 
   const tree = useMemo(() => buildTree(entries), [entries]);
   const summary = useMemo(() => {
@@ -128,12 +129,12 @@ export function TreeView({
 
   const toggleStage = (path: string, staged: boolean) => {
     const p = staged ? gitUnstage([path]) : gitStage([path]);
-    p.then(() => setBump((b) => b + 1)).catch((e) => setNote(String(e)));
+    p.then(onChanged).catch((e) => setNote(String(e)));
   };
   const stageAll = () => {
     const unstaged = entries.filter((e) => !e.staged).map((e) => e.path);
     if (!unstaged.length) return;
-    gitStage(unstaged).then(() => setBump((b) => b + 1)).catch((e) => setNote(String(e)));
+    gitStage(unstaged).then(onChanged).catch((e) => setNote(String(e)));
   };
   const commit = () => {
     if (!msg.trim() || summary.staged === 0) return;
@@ -141,7 +142,7 @@ export function TreeView({
       .then((hash) => {
         setMsg("");
         setNote(`committed ${hash}`);
-        setBump((b) => b + 1);
+        onChanged();
       })
       .catch((e) => setNote(String(e)));
   };

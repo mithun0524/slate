@@ -410,7 +410,8 @@ fn search_text(
         regex::escape(&query)
     };
     if whole_word {
-        pat = format!(r"\b{pat}\b");
+        // Group so alternation/anchors bind inside the word boundaries.
+        pat = format!(r"\b(?:{pat})\b");
     }
     let re = RegexBuilder::new(&pat)
         .case_insensitive(!case_sensitive)
@@ -455,18 +456,29 @@ fn search_text(
         let mut matches: Vec<LineMatch> = Vec::new();
         for (i, line) in text.lines().enumerate() {
             if let Some(m) = re.find(line) {
-                let col = line[..m.start()].chars().count() as u32;
+                let col_chars = line[..m.start()].chars().count();
                 let len = m.as_str().chars().count() as u32;
-                let shown: String = if line.chars().count() > MAX_LINE {
-                    line.chars().take(MAX_LINE).collect()
+                let all: Vec<char> = line.chars().collect();
+                // Window the shown text around the match so highlight offsets
+                // stay valid on very long lines.
+                let (text, col) = if all.len() > MAX_LINE {
+                    let start = col_chars.saturating_sub(40);
+                    let end = (start + MAX_LINE).min(all.len());
+                    let mut s: String = all[start..end].iter().collect();
+                    let mut c = col_chars - start;
+                    if start > 0 {
+                        s.insert(0, '…');
+                        c += 1;
+                    }
+                    (s, c as u32)
                 } else {
-                    line.to_string()
+                    (line.to_string(), col_chars as u32)
                 };
                 matches.push(LineMatch {
                     line: (i + 1) as u32,
                     col,
                     len,
-                    text: shown,
+                    text,
                 });
                 total += 1;
                 if matches.len() >= PER_FILE || total >= MAX_TOTAL {
