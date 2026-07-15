@@ -1642,13 +1642,23 @@ body {
   padding: 48px 0;
 }
 .wl-head {
-  margin-bottom: 30px;
+  margin-bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.wl-logo {
+  font-size: 26px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 8px;
 }
 .wl-brand {
   margin: 0;
-  font-size: 52px;
+  font-size: 34px;
   font-weight: 800;
-  letter-spacing: -1.5px;
+  letter-spacing: -1px;
   line-height: 1;
   background: linear-gradient(120deg, var(--accent), #f4dc9a);
   -webkit-background-clip: text;
@@ -1656,9 +1666,99 @@ body {
   color: transparent;
 }
 .wl-tag {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: var(--fg-mut);
+  font-size: 13px;
+}
+
+.wl-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 24px 0;
+}
+.wl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 94px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 15px 16px;
+  cursor: pointer;
+  transition: background 0.16s, border-color 0.16s, transform 0.16s, box-shadow 0.16s;
+}
+.wl-card:hover {
+  background: var(--bg-3);
+  border-color: var(--fg-dim);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+}
+.wl-card:active {
+  transform: translateY(0);
+}
+.wl-card-ic {
+  color: var(--fg-mut);
+}
+.wl-card-ic svg {
+  width: 20px;
+  height: 20px;
+}
+.wl-card-title {
+  color: var(--fg);
   font-size: 14px;
+  font-weight: 600;
+}
+
+.wl-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding: 0 4px;
+  color: var(--fg-mut);
+  font-size: 12px;
+}
+.wl-viewall {
+  background: transparent;
+  border: none;
+  color: var(--fg-mut);
+  cursor: pointer;
+  font-size: 12px;
+}
+.wl-viewall:hover {
+  color: var(--accent);
+}
+.wl-recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.wl-recent-row:hover {
+  background: var(--bg-2);
+}
+.wl-recent-name {
+  color: var(--fg);
+  font-size: 13px;
+}
+.wl-recent-loc {
+  color: var(--fg-dim);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .wl-actions {
   display: flex;
