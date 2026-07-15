@@ -878,7 +878,7 @@ body {
 }
 .dline.add .code {
   background: var(--add-bg);
-  color: var(--add-fg);
+  color: var(--fg);
 }
 .dline.del .gutter {
   background: var(--del-gutter);
@@ -889,7 +889,7 @@ body {
 }
 .dline.del .code {
   background: var(--del-bg);
-  color: var(--del-fg);
+  color: var(--fg);
 }
 
 /* word-level intra-line highlight */
