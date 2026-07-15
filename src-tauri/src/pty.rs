@@ -1,23 +1,38 @@
-//! A single pseudo-terminal session running the user's shell (where Claude Code
-//! is launched). Output is streamed to the frontend over `pty://data`; the
-//! child's exit is announced on `pty://exit`. The shell is launched with a
-//! small integration hook so it emits an OSC 7 sequence on every directory
-//! change — we parse that out of the stream and emit `pty://cwd`, letting
-//! Panel B follow the terminal's directory.
+//! Pseudo-terminal sessions running the user's shell (where Claude Code runs).
+//! Each session has an id; output/exit/cwd events carry that id so the frontend
+//! can drive multiple terminal tabs. The shell is launched with a cwd-reporting
+//! hook (OSC 7) so Panel B can follow the active terminal's directory.
 
 use portable_pty::{native_pty_system, ChildKiller, CommandBuilder, PtySize};
+use serde::Serialize;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Emitter};
 
-/// Emit the valid-UTF-8 prefix of `pending` to the frontend, leaving any
-/// incomplete trailing multi-byte sequence in `pending` for the next read.
-fn emit_decoded(app: &AppHandle, pending: &mut Vec<u8>) {
+#[derive(Clone, Serialize)]
+struct PtyData {
+    id: String,
+    data: String,
+}
+#[derive(Clone, Serialize)]
+struct PtyExit {
+    id: String,
+    code: u32,
+}
+#[derive(Clone, Serialize)]
+struct PtyCwd {
+    id: String,
+    dir: String,
+}
+
+/// Emit the valid-UTF-8 prefix of `pending`, holding an incomplete trailing
+/// multi-byte sequence for the next read.
+fn emit_decoded(app: &AppHandle, id: &str, pending: &mut Vec<u8>) {
     loop {
         match std::str::from_utf8(pending) {
             Ok(s) => {
                 if !s.is_empty() {
-                    let _ = app.emit("pty://data", s.to_string());
+                    let _ = app.emit("pty://data", PtyData { id: id.to_string(), data: s.to_string() });
                 }
                 pending.clear();
                 return;
@@ -26,12 +41,12 @@ fn emit_decoded(app: &AppHandle, pending: &mut Vec<u8>) {
                 let valid = e.valid_up_to();
                 if valid > 0 {
                     let s = unsafe { std::str::from_utf8_unchecked(&pending[..valid]) };
-                    let _ = app.emit("pty://data", s.to_string());
+                    let _ = app.emit("pty://data", PtyData { id: id.to_string(), data: s.to_string() });
                     pending.drain(..valid);
                 }
                 match e.error_len() {
                     Some(bad) => {
-                        let _ = app.emit("pty://data", "\u{fffd}".to_string());
+                        let _ = app.emit("pty://data", PtyData { id: id.to_string(), data: "\u{fffd}".to_string() });
                         pending.drain(..bad);
                     }
                     None => return,
@@ -41,8 +56,6 @@ fn emit_decoded(app: &AppHandle, pending: &mut Vec<u8>) {
     }
 }
 
-/// State machine that extracts OSC 7 (`ESC ] 7 ; file://host/path ST`) cwd
-/// reports from the raw byte stream, running alongside the passthrough decode.
 #[derive(Default)]
 struct OscScanner {
     state: OscState,
@@ -58,7 +71,7 @@ enum OscState {
 }
 
 impl OscScanner {
-    fn feed(&mut self, byte: u8, app: &AppHandle) {
+    fn feed(&mut self, byte: u8, app: &AppHandle, id: &str) {
         match self.state {
             OscState::Idle => {
                 if byte == 0x1b {
@@ -67,7 +80,6 @@ impl OscScanner {
             }
             OscState::Esc => {
                 if byte == 0x5d {
-                    // ']'
                     self.state = OscState::Osc;
                     self.buf.clear();
                 } else if byte != 0x1b {
@@ -76,7 +88,7 @@ impl OscScanner {
             }
             OscState::Osc => {
                 if byte == 0x07 {
-                    self.finish(app);
+                    self.finish(app, id);
                 } else if byte == 0x1b {
                     self.state = OscState::OscEsc;
                 } else if self.buf.len() < 8192 {
@@ -86,9 +98,8 @@ impl OscScanner {
                 }
             }
             OscState::OscEsc => {
-                // Expect '\' to complete ST; anything else = malformed.
                 if byte == 0x5c {
-                    self.finish(app);
+                    self.finish(app, id);
                 } else {
                     self.state = OscState::Idle;
                 }
@@ -96,11 +107,11 @@ impl OscScanner {
         }
     }
 
-    fn finish(&mut self, app: &AppHandle) {
+    fn finish(&mut self, app: &AppHandle, id: &str) {
         let s = String::from_utf8_lossy(&self.buf);
         if let Some(rest) = s.strip_prefix("7;") {
-            if let Some(path) = parse_file_url(rest) {
-                let _ = app.emit("pty://cwd", path);
+            if let Some(dir) = parse_file_url(rest) {
+                let _ = app.emit("pty://cwd", PtyCwd { id: id.to_string(), dir });
             }
         }
         self.buf.clear();
@@ -108,10 +119,8 @@ impl OscScanner {
     }
 }
 
-/// `file://host/Users/x` (or a bare `/path`) -> decoded filesystem path.
 fn parse_file_url(s: &str) -> Option<String> {
     let path = if let Some(after) = s.strip_prefix("file://") {
-        // Skip the authority (host) up to the first '/'.
         match after.find('/') {
             Some(i) => &after[i..],
             None => return None,
@@ -130,8 +139,10 @@ fn percent_decode(s: &str) -> String {
     let mut i = 0;
     while i < bytes.len() {
         if bytes[i] == b'%' && i + 2 < bytes.len() {
-            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
-            if let Some(v) = hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+            if let Some(v) = std::str::from_utf8(&bytes[i + 1..i + 3])
+                .ok()
+                .and_then(|h| u8::from_str_radix(h, 16).ok())
+            {
                 out.push(v);
                 i += 3;
                 continue;
@@ -143,8 +154,6 @@ fn percent_decode(s: &str) -> String {
     String::from_utf8_lossy(&out).into_owned()
 }
 
-/// Build the shell command with cwd-reporting integration when we recognise the
-/// shell (zsh / bash). Unknown shells launch plainly (no directory following).
 fn build_shell_command(cwd: &Path) -> CommandBuilder {
     let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
     let base = Path::new(&shell)
@@ -178,7 +187,6 @@ fn build_shell_command(cwd: &Path) -> CommandBuilder {
 
 fn write_zsh_integration(dir: &Path) -> std::io::Result<()> {
     std::fs::create_dir_all(dir)?;
-    // ZDOTDIR override: source the user's real .zshrc, then add cwd hooks.
     let body = r#"# Vellum shell integration
 if [ -n "$VELLUM_USER_ZDOTDIR" ] && [ -r "$VELLUM_USER_ZDOTDIR/.zshrc" ]; then
   source "$VELLUM_USER_ZDOTDIR/.zshrc"
@@ -208,7 +216,7 @@ __vellum_cwd
     Ok(rc)
 }
 
-/// Live handle to the pty master + writer, held in app state.
+/// Live handle to one pty session.
 pub struct PtySession {
     master: Box<dyn portable_pty::MasterPty + Send>,
     writer: Box<dyn Write + Send>,
@@ -223,19 +231,19 @@ impl Drop for PtySession {
 }
 
 impl PtySession {
-    pub fn spawn(app: &AppHandle, cwd: &Path, cols: u16, rows: u16) -> Result<Self, String> {
+    pub fn spawn(
+        app: &AppHandle,
+        id: String,
+        cwd: &Path,
+        cols: u16,
+        rows: u16,
+    ) -> Result<Self, String> {
         let pty_system = native_pty_system();
         let pair = pty_system
-            .openpty(PtySize {
-                rows,
-                cols,
-                pixel_width: 0,
-                pixel_height: 0,
-            })
+            .openpty(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
             .map_err(|e| e.to_string())?;
 
         let cmd = build_shell_command(cwd);
-
         let mut child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
         drop(pair.slave);
 
@@ -245,8 +253,8 @@ impl PtySession {
         let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
         let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
-        // Reader thread: passthrough decode + OSC 7 cwd scan.
         let app_read = app.clone();
+        let read_id = id.clone();
         std::thread::spawn(move || {
             let mut buf = [0u8; 8192];
             let mut pending: Vec<u8> = Vec::new();
@@ -256,10 +264,10 @@ impl PtySession {
                     Ok(0) => break,
                     Ok(n) => {
                         for &b in &buf[..n] {
-                            osc.feed(b, &app_read);
+                            osc.feed(b, &app_read, &read_id);
                         }
                         pending.extend_from_slice(&buf[..n]);
-                        emit_decoded(&app_read, &mut pending);
+                        emit_decoded(&app_read, &read_id, &mut pending);
                     }
                     Err(_) => break,
                 }
@@ -267,34 +275,23 @@ impl PtySession {
         });
 
         let app_exit = app.clone();
+        let exit_id = id.clone();
         std::thread::spawn(move || {
             let code = child.wait().ok().map(|s| s.exit_code()).unwrap_or(0);
-            let _ = app_exit.emit("pty://exit", code);
+            let _ = app_exit.emit("pty://exit", PtyExit { id: exit_id, code });
         });
 
-        Ok(PtySession {
-            master: pair.master,
-            writer,
-            killer,
-            pid,
-        })
+        Ok(PtySession { master: pair.master, writer, killer, pid })
     }
 
     pub fn write(&mut self, data: &str) -> Result<(), String> {
-        self.writer
-            .write_all(data.as_bytes())
-            .map_err(|e| e.to_string())?;
+        self.writer.write_all(data.as_bytes()).map_err(|e| e.to_string())?;
         self.writer.flush().map_err(|e| e.to_string())
     }
 
     pub fn resize(&self, cols: u16, rows: u16) -> Result<(), String> {
         self.master
-            .resize(PtySize {
-                rows,
-                cols,
-                pixel_width: 0,
-                pixel_height: 0,
-            })
+            .resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 })
             .map_err(|e| e.to_string())
     }
 }

@@ -52,14 +52,16 @@ export interface TreeEntry {
 export const openWorkspace = (path: string): Promise<boolean> =>
   invoke("open_workspace", { path });
 
-export const ptySpawn = (cols: number, rows: number): Promise<void> =>
-  invoke("pty_spawn", { cols, rows });
+export const ptySpawn = (id: string, cols: number, rows: number): Promise<void> =>
+  invoke("pty_spawn", { id, cols, rows });
 
-export const ptyWrite = (data: string): Promise<void> =>
-  invoke("pty_write", { data });
+export const ptyWrite = (id: string, data: string): Promise<void> =>
+  invoke("pty_write", { id, data });
 
-export const ptyResize = (cols: number, rows: number): Promise<void> =>
-  invoke("pty_resize", { cols, rows });
+export const ptyResize = (id: string, cols: number, rows: number): Promise<void> =>
+  invoke("pty_resize", { id, cols, rows });
+
+export const ptyClose = (id: string): Promise<void> => invoke("pty_close", { id });
 
 export const agentRunning = (): Promise<boolean> => invoke("agent_running");
 
@@ -128,14 +130,27 @@ export const gitCommit = (message: string): Promise<string> =>
 
 // --- events ---
 
-export const onPtyData = (cb: (chunk: string) => void): Promise<UnlistenFn> =>
-  listen<string>("pty://data", (e) => cb(e.payload));
+export interface PtyData {
+  id: string;
+  data: string;
+}
+export interface PtyExit {
+  id: string;
+  code: number;
+}
+export interface PtyCwd {
+  id: string;
+  dir: string;
+}
 
-export const onPtyExit = (cb: (code: number) => void): Promise<UnlistenFn> =>
-  listen<number>("pty://exit", (e) => cb(e.payload));
+export const onPtyData = (cb: (p: PtyData) => void): Promise<UnlistenFn> =>
+  listen<PtyData>("pty://data", (e) => cb(e.payload));
 
-export const onPtyCwd = (cb: (dir: string) => void): Promise<UnlistenFn> =>
-  listen<string>("pty://cwd", (e) => cb(e.payload));
+export const onPtyExit = (cb: (p: PtyExit) => void): Promise<UnlistenFn> =>
+  listen<PtyExit>("pty://exit", (e) => cb(e.payload));
+
+export const onPtyCwd = (cb: (p: PtyCwd) => void): Promise<UnlistenFn> =>
+  listen<PtyCwd>("pty://cwd", (e) => cb(e.payload));
 
 export const onIntent = (cb: (ev: IntentEvent) => void): Promise<UnlistenFn> =>
   listen<IntentEvent>("vellum://intent", (e) => cb(e.payload));

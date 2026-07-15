@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import { onPtyData, onPtyExit, ptyResize, ptySpawn, ptyWrite } from "../lib/ipc";
+import { onPtyData, onPtyExit, ptyClose, ptyResize, ptySpawn, ptyWrite } from "../lib/ipc";
 import { THEMES, type ThemeId } from "../lib/themes";
 
 function termColors(id: ThemeId) {
@@ -15,10 +15,19 @@ function termColors(id: ThemeId) {
   };
 }
 
-// Pane A: a real terminal wired to the Rust pty. Claude Code runs here.
-export function Terminal({ themeId }: { themeId: ThemeId }) {
+// One terminal tab, bound to pty session `id`. Claude Code runs here.
+export function Terminal({
+  id,
+  themeId,
+  active,
+}: {
+  id: string;
+  themeId: ThemeId;
+  active: boolean;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<XTerm | null>(null);
+  const fitRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -32,18 +41,23 @@ export function Terminal({ themeId }: { themeId: ThemeId }) {
     });
     termRef.current = term;
     const fit = new FitAddon();
+    fitRef.current = fit;
     term.loadAddon(fit);
     term.open(host);
-    fit.fit();
+    try {
+      fit.fit();
+    } catch {
+      /* hidden on mount */
+    }
 
     let disposed = false;
     const unlisteners: Array<() => void> = [];
 
     (async () => {
       try {
-        const offData = await onPtyData((chunk) => term.write(chunk));
-        const offExit = await onPtyExit((code) =>
-          term.write(`\r\n\x1b[90m[process exited: ${code}]\x1b[0m\r\n`),
+        const offData = await onPtyData((p) => p.id === id && term.write(p.data));
+        const offExit = await onPtyExit(
+          (p) => p.id === id && term.write(`\r\n\x1b[90m[process exited: ${p.code}]\x1b[0m\r\n`),
         );
         if (disposed) {
           offData();
@@ -51,22 +65,22 @@ export function Terminal({ themeId }: { themeId: ThemeId }) {
           return;
         }
         unlisteners.push(offData, offExit);
-        await ptySpawn(term.cols, term.rows);
+        await ptySpawn(id, term.cols, term.rows);
       } catch (e) {
         term.write(`\r\n\x1b[31m[pty error: ${e}]\x1b[0m\r\n`);
       }
     })();
 
     const offInput = term.onData((data) => {
-      ptyWrite(data).catch(() => {});
+      ptyWrite(id, data).catch(() => {});
     });
 
     const ro = new ResizeObserver(() => {
       try {
         fit.fit();
-        ptyResize(term.cols, term.rows).catch(() => {});
+        ptyResize(id, term.cols, term.rows).catch(() => {});
       } catch {
-        /* ignore transient resize errors */
+        /* ignore transient */
       }
     });
     ro.observe(host);
@@ -78,13 +92,32 @@ export function Terminal({ themeId }: { themeId: ThemeId }) {
       unlisteners.forEach((fn) => fn());
       term.dispose();
       termRef.current = null;
+      ptyClose(id).catch(() => {});
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-  // Recolor live when the theme changes.
+  // Refit + focus when this tab becomes active (it may have been hidden).
+  useEffect(() => {
+    if (!active) return;
+    const term = termRef.current;
+    const fit = fitRef.current;
+    if (!term || !fit) return;
+    const t = window.setTimeout(() => {
+      try {
+        fit.fit();
+        ptyResize(id, term.cols, term.rows).catch(() => {});
+        term.focus();
+      } catch {
+        /* ignore */
+      }
+    }, 30);
+    return () => window.clearTimeout(t);
+  }, [active, id]);
+
   useEffect(() => {
     if (termRef.current) termRef.current.options.theme = termColors(themeId);
   }, [themeId]);
 
-  return <div className="terminal-host" ref={hostRef} />;
+  return <div className="terminal-host" ref={hostRef} style={{ display: active ? "block" : "none" }} />;
 }

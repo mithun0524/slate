@@ -326,8 +326,87 @@ body {
 .terminal-host {
   height: 100%;
   width: 100%;
-  background: #1e1e1e;
+  background: var(--term-bg, #1e1e1e);
   padding: 8px 10px;
+}
+
+.term-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--term-bg, #1e1e1e);
+}
+.term-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 6px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  overflow-x: auto;
+}
+.term-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  color: var(--fg-mut);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.term-tab:hover {
+  color: var(--fg);
+  background: var(--bg-3);
+}
+.term-tab.on {
+  color: var(--fg);
+  background: var(--bg-3);
+  border-color: var(--border);
+}
+.term-tab-ic {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+.term-close {
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.term-close:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+.term-add {
+  background: transparent;
+  border: none;
+  color: var(--fg-mut);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 9px;
+  border-radius: 6px;
+}
+.term-add:hover {
+  color: var(--fg);
+  background: var(--bg-3);
+}
+.term-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.term-body .terminal-host {
+  position: absolute;
+  inset: 0;
 }
 
 /* ============ panel B ============ */

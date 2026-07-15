@@ -10,6 +10,7 @@ mod watcher;
 
 use notify::RecommendedWatcher;
 use pty::PtySession;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use regex::RegexBuilder;
@@ -19,10 +20,10 @@ use walkdir::WalkDir;
 
 #[derive(Default)]
 struct AppState {
-    pty: Mutex<Option<PtySession>>,
+    ptys: Mutex<HashMap<String, PtySession>>,
     workspace: Mutex<Option<PathBuf>>,
     watcher: Mutex<Option<RecommendedWatcher>>,
-    shell_pid: Mutex<Option<u32>>,
+    shell_pids: Mutex<HashMap<String, u32>>,
 }
 
 fn home_dir() -> PathBuf {
@@ -55,6 +56,7 @@ fn open_workspace(
 fn pty_spawn(
     app: AppHandle,
     state: State<AppState>,
+    id: String,
     cols: u16,
     rows: u16,
 ) -> Result<(), String> {
@@ -64,20 +66,28 @@ fn pty_spawn(
         .unwrap()
         .clone()
         .unwrap_or_else(home_dir);
-    let session = PtySession::spawn(&app, &cwd, cols.max(1), rows.max(1))?;
-    *state.shell_pid.lock().unwrap() = session.pid;
-    *state.pty.lock().unwrap() = Some(session);
+    let session = PtySession::spawn(&app, id.clone(), &cwd, cols.max(1), rows.max(1))?;
+    if let Some(pid) = session.pid {
+        state.shell_pids.lock().unwrap().insert(id.clone(), pid);
+    }
+    state.ptys.lock().unwrap().insert(id, session);
     Ok(())
+}
+
+#[tauri::command]
+fn pty_close(state: State<AppState>, id: String) {
+    state.ptys.lock().unwrap().remove(&id); // Drop kills the child
+    state.shell_pids.lock().unwrap().remove(&id);
 }
 
 /// Heuristic: is an agent (Claude Code) running under the terminal's shell?
 /// Walks the process tree from the shell pid and looks for a "claude" process.
 #[tauri::command]
 fn agent_running(state: State<AppState>) -> bool {
-    let shell = match *state.shell_pid.lock().unwrap() {
-        Some(p) => p,
-        None => return false,
-    };
+    let shells: Vec<u32> = state.shell_pids.lock().unwrap().values().copied().collect();
+    if shells.is_empty() {
+        return false;
+    }
     let out = match std::process::Command::new("ps")
         .args(["-axo", "pid=,ppid=,args="])
         .output()
@@ -87,9 +97,8 @@ fn agent_running(state: State<AppState>) -> bool {
     };
     let text = String::from_utf8_lossy(&out.stdout);
 
-    // Build ppid -> [(pid, args)] and pid -> args.
-    let mut children: std::collections::HashMap<u32, Vec<u32>> = std::collections::HashMap::new();
-    let mut args_of: std::collections::HashMap<u32, String> = std::collections::HashMap::new();
+    let mut children: HashMap<u32, Vec<u32>> = HashMap::new();
+    let mut args_of: HashMap<u32, String> = HashMap::new();
     for line in text.lines() {
         let mut it = line.trim().splitn(3, char::is_whitespace);
         let (Some(pid), Some(ppid), Some(args)) = (it.next(), it.next(), it.next()) else {
@@ -101,8 +110,8 @@ fn agent_running(state: State<AppState>) -> bool {
         }
     }
 
-    // DFS descendants of the shell; match a claude process.
-    let mut stack = vec![shell];
+    let shell_set: std::collections::HashSet<u32> = shells.iter().copied().collect();
+    let mut stack = shells;
     let mut seen = std::collections::HashSet::new();
     while let Some(pid) = stack.pop() {
         if !seen.insert(pid) {
@@ -110,7 +119,7 @@ fn agent_running(state: State<AppState>) -> bool {
         }
         if let Some(args) = args_of.get(&pid) {
             let a = args.to_ascii_lowercase();
-            if pid != shell && (a.contains("claude") || a.contains("claude-code")) {
+            if !shell_set.contains(&pid) && a.contains("claude") {
                 return true;
             }
         }
@@ -122,20 +131,20 @@ fn agent_running(state: State<AppState>) -> bool {
 }
 
 #[tauri::command]
-fn pty_write(state: State<AppState>, data: String) -> Result<(), String> {
-    let mut guard = state.pty.lock().unwrap();
-    match guard.as_mut() {
+fn pty_write(state: State<AppState>, id: String, data: String) -> Result<(), String> {
+    let mut guard = state.ptys.lock().unwrap();
+    match guard.get_mut(&id) {
         Some(p) => p.write(&data),
-        None => Err("no pty session".into()),
+        None => Err("no such pty session".into()),
     }
 }
 
 #[tauri::command]
-fn pty_resize(state: State<AppState>, cols: u16, rows: u16) -> Result<(), String> {
-    let guard = state.pty.lock().unwrap();
-    match guard.as_ref() {
+fn pty_resize(state: State<AppState>, id: String, cols: u16, rows: u16) -> Result<(), String> {
+    let guard = state.ptys.lock().unwrap();
+    match guard.get(&id) {
         Some(p) => p.resize(cols.max(1), rows.max(1)),
-        None => Ok(()), // nothing to resize yet
+        None => Ok(()),
     }
 }
 
@@ -620,6 +629,7 @@ pub fn run() {
             pty_spawn,
             pty_write,
             pty_resize,
+            pty_close,
             agent_running,
             git_tree,
             git_diff,

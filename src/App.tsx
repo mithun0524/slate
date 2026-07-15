@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { SplitPane } from "./components/SplitPane";
-import { Terminal } from "./components/Terminal";
+import { TerminalPane, type Term } from "./components/TerminalPane";
 import { PanelB } from "./components/PanelB";
 import { type ActItem } from "./components/ActivityBar";
 import { ViewTabs } from "./components/ViewTabs";
@@ -45,11 +45,53 @@ function App() {
     }
   });
 
+  const [terms, setTerms] = useState<Term[]>([{ id: "t1", title: "Terminal 1" }]);
+  const [activeTerm, setActiveTerm] = useState("t1");
+
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
   const wsRef = useRef<string>("");
   const lastSpecRef = useRef<string | null>(null);
   lastSpecRef.current = lastSpec;
+  const activeTermRef = useRef(activeTerm);
+  activeTermRef.current = activeTerm;
+  const termSeq = useRef(1);
+  const termCwds = useRef<Record<string, string>>({});
+
+  const repoint = useCallback((dir: string) => {
+    openWorkspace(dir)
+      .then((repo) => {
+        wsRef.current = dir;
+        setWsPath(dir);
+        setIsRepo(repo);
+        setSeq((s) => s + 1);
+      })
+      .catch(() => {});
+  }, []);
+
+  const addTerm = () => {
+    const n = ++termSeq.current;
+    const id = `t${n}`;
+    setTerms((ts) => [...ts, { id, title: `Terminal ${n}` }]);
+    setActiveTerm(id);
+  };
+  const activateTerm = (id: string) => {
+    setActiveTerm(id);
+    const dir = termCwds.current[id];
+    if (dir && dir !== wsRef.current) repoint(dir);
+  };
+  const closeTerm = (id: string) => {
+    setTerms((prev) => {
+      if (prev.length <= 1) return prev;
+      const idx = prev.findIndex((t) => t.id === id);
+      const rest = prev.filter((t) => t.id !== id);
+      if (id === activeTermRef.current) {
+        const next = rest[Math.max(0, idx - 1)] ?? rest[0];
+        setActiveTerm(next.id);
+      }
+      return rest;
+    });
+  };
 
   useEffect(() => applyTheme(theme), [theme]);
 
@@ -71,21 +113,16 @@ function App() {
   }, [apply]);
 
   useEffect(() => {
-    const p = onPtyCwd((dir) => {
-      if (!dir || dir === wsRef.current) return;
-      openWorkspace(dir)
-        .then((repo) => {
-          wsRef.current = dir;
-          setWsPath(dir);
-          setIsRepo(repo);
-          setSeq((s) => s + 1);
-        })
-        .catch(() => {});
+    const p = onPtyCwd(({ id, dir }) => {
+      if (!dir) return;
+      termCwds.current[id] = dir;
+      if (id !== activeTermRef.current || dir === wsRef.current) return;
+      repoint(dir);
     });
     return () => {
       p.then((off) => off());
     };
-  }, []);
+  }, [repoint]);
 
   // Global shortcuts: ⌘K / ⌘⇧P palette, Esc closes overlays.
   useEffect(() => {
@@ -186,7 +223,16 @@ function App() {
       <TitleBar cwd={wsPath} onCommand={() => setPaletteOpen(true)} />
       <div className="shell-main">
         <SplitPane
-          left={<Terminal themeId={theme} />}
+          left={
+            <TerminalPane
+              terms={terms}
+              activeId={activeTerm}
+              themeId={theme}
+              onActivate={activateTerm}
+              onAdd={addTerm}
+              onClose={closeTerm}
+            />
+          }
           right={
             <div className="panel-b">
               <ViewTabs active={active} onSelect={navigate} />
