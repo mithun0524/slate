@@ -312,6 +312,14 @@ body {
 .split.dragging {
   cursor: col-resize;
 }
+/* While dragging a divider, kill selection everywhere (WKWebView needs the
+   -webkit- prefix and !important to override element defaults). */
+body.dragging-split,
+body.dragging-split * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  cursor: col-resize !important;
+}
 .split-pane {
   height: 100%;
   overflow: hidden;

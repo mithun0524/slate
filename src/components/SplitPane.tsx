@@ -33,19 +33,18 @@ export function SplitPane({
   const [active, setActive] = useState(false);
 
   const startDrag = useCallback((e: React.PointerEvent) => {
+    e.preventDefault(); // stop WKWebView from starting a native text selection
     dragging.current = true;
     setActive(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    document.body.style.userSelect = "none";
-    document.body.style.cursor = "col-resize";
+    document.body.classList.add("dragging-split");
     window.getSelection()?.removeAllRanges();
   }, []);
 
   const endDrag = useCallback(() => {
     dragging.current = false;
     setActive(false);
-    document.body.style.userSelect = "";
-    document.body.style.cursor = "";
+    document.body.classList.remove("dragging-split");
     window.getSelection()?.removeAllRanges();
   }, []);
 
