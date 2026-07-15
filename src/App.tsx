@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { SplitPane } from "./components/SplitPane";
 import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
-import { ActivityBar, type ActItem } from "./components/ActivityBar";
+import { type ActItem } from "./components/ActivityBar";
 import { ViewMenu } from "./components/ViewMenu";
 import { TitleBar } from "./components/TitleBar";
 import { StatusBar } from "./components/StatusBar";
@@ -146,12 +146,6 @@ function App() {
   return (
     <div className="shell">
       <TitleBar cwd={wsPath} onCommand={() => setPaletteOpen(true)} />
-      <ActivityBar
-        active={active}
-        onSelect={navigate}
-        onSearch={() => setPaletteOpen(true)}
-        onSettings={() => setSettingsOpen(true)}
-      />
       <div className="shell-main">
         <SplitPane
           left={<Terminal themeId={theme} />}
@@ -174,6 +168,7 @@ function App() {
         cwd={wsPath}
         themeLabel={theme}
         onTheme={() => setSettingsOpen(true)}
+        onSettings={() => setSettingsOpen(true)}
       />
 
       {paletteOpen && (

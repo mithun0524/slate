@@ -1086,10 +1086,10 @@ body {
 .shell {
   display: grid;
   grid-template-areas:
-    "title title"
-    "activity main"
-    "status status";
-  grid-template-columns: 48px 1fr;
+    "title"
+    "main"
+    "status";
+  grid-template-columns: 1fr;
   grid-template-rows: 36px 1fr 24px;
   height: 100%;
   background: var(--bg);
@@ -1266,6 +1266,10 @@ body {
   gap: 5px;
   margin-left: 6px;
   color: var(--fg-dim);
+}
+.sb-gear svg {
+  width: 13px;
+  height: 13px;
 }
 
 .shell-main {

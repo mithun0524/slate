@@ -14,6 +14,7 @@ export function StatusBar({
   cwd,
   themeLabel,
   onTheme,
+  onSettings,
 }: {
   refreshKey: number;
   isRepo: boolean;
@@ -23,6 +24,7 @@ export function StatusBar({
   cwd: string;
   themeLabel: string;
   onTheme: () => void;
+  onSettings: () => void;
 }) {
   const [head, setHead] = useState<HeadInfo>({ branch: "", ahead: 0, behind: 0 });
   const [changes, setChanges] = useState(0);
@@ -84,6 +86,12 @@ export function StatusBar({
         </button>
         <button className="sb-item btn" onClick={onTheme} title="Switch theme">
           {themeLabel}
+        </button>
+        <button className="sb-item btn sb-gear" onClick={onSettings} title="Settings">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3">
+            <circle cx="8" cy="8" r="2" />
+            <path d="M8 1.5v1.6M8 12.9v1.6M14.5 8h-1.6M3.1 8H1.5m11-4.6l-1.1 1.1M4.6 11.4l-1.1 1.1m0-8l1.1 1.1m6.8 6.8l1.1 1.1" strokeLinecap="round" />
+          </svg>
         </button>
         <span className="sb-item" title="Line endings">
           LF
