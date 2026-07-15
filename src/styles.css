@@ -17,13 +17,21 @@
   --accent: #d6d6d9;
   --accent-soft: rgba(255, 255, 255, 0.07);
 
-  /* semantic diff/status */
+  /* semantic diff/status (dark defaults; overridden per-theme for light) */
   --add: #4ac26b;
   --add-bg: rgba(70, 149, 74, 0.18);
   --add-gutter: rgba(70, 149, 74, 0.3);
+  --add-fg: #b9f0c7;
+  --add-gutter-fg: #97e0aa;
   --del: #f2726b;
   --del-bg: rgba(203, 66, 62, 0.2);
   --del-gutter: rgba(203, 66, 62, 0.32);
+  --del-fg: #f9c4c0;
+  --del-gutter-fg: #f6b0ab;
+  --wl-add-bg: rgba(46, 160, 67, 0.45);
+  --wl-add-fg: #d6ffe0;
+  --wl-del-bg: rgba(248, 81, 73, 0.4);
+  --wl-del-fg: #ffd7d4;
   --hunk: #6cb0ff;
 
   --font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -863,25 +871,25 @@ body {
 }
 .dline.add .gutter {
   background: var(--add-gutter);
-  color: #97e0aa;
+  color: var(--add-gutter-fg);
 }
 .dline.add .sign {
   color: var(--add);
 }
 .dline.add .code {
   background: var(--add-bg);
-  color: #b9f0c7;
+  color: var(--add-fg);
 }
 .dline.del .gutter {
   background: var(--del-gutter);
-  color: #f6b0ab;
+  color: var(--del-gutter-fg);
 }
 .dline.del .sign {
   color: var(--del);
 }
 .dline.del .code {
   background: var(--del-bg);
-  color: #f9c4c0;
+  color: var(--del-fg);
 }
 
 /* word-level intra-line highlight */
@@ -890,12 +898,12 @@ body {
   padding: 0 1px;
 }
 .wl-del {
-  background: rgba(248, 81, 73, 0.4);
-  color: #ffd7d4;
+  background: var(--wl-del-bg);
+  color: var(--wl-del-fg);
 }
 .wl-add {
-  background: rgba(46, 160, 67, 0.45);
-  color: #d6ffe0;
+  background: var(--wl-add-bg);
+  color: var(--wl-add-fg);
 }
 
 /* mini segmented (diff mode toggle) */
