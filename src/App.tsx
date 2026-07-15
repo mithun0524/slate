@@ -191,7 +191,7 @@ function App() {
 
   return (
     <div className="shell">
-      <TitleBar cwd={wsPath} />
+      <TitleBar cwd={wsPath} onCommand={() => setPaletteOpen(true)} />
       <ActivityBar
         active={active}
         onSelect={navigate}

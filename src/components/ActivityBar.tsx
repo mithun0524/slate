@@ -57,7 +57,16 @@ const ITEMS: { id: ActItem; label: string }[] = [
   { id: "timeline", label: "Timeline" },
 ];
 
-// Cursor/VS Code-style left icon rail. Selects the primary Panel B view.
+function Flyout({ label, kbd }: { label: string; kbd?: string }) {
+  return (
+    <span className="act-flyout">
+      {label}
+      {kbd && <span className="act-kbd">{kbd}</span>}
+    </span>
+  );
+}
+
+// Cursor/VS Code-style left icon rail with hover labels. Selects Panel B view.
 export function ActivityBar({
   active,
   onSelect,
@@ -76,19 +85,21 @@ export function ActivityBar({
           <button
             key={it.id}
             className={`act-btn ${active === it.id ? "on" : ""}`}
-            title={it.label}
             onClick={() => onSelect(it.id)}
           >
             <Icon name={it.id} />
+            <Flyout label={it.label} />
           </button>
         ))}
-        <button className="act-btn" title="Search (⌘K)" onClick={onSearch}>
+        <button className="act-btn" onClick={onSearch}>
           <Icon name="search" />
+          <Flyout label="Search" kbd="⌘K" />
         </button>
       </div>
       <div className="act-group">
-        <button className="act-btn" title="Settings" onClick={onSettings}>
+        <button className="act-btn" onClick={onSettings}>
           <Icon name="settings" />
+          <Flyout label="Settings" />
         </button>
       </div>
     </div>

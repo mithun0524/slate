@@ -1,7 +1,9 @@
 //! Thin, read-only wrappers over `git2` for the tree and diff views.
 
-use crate::types::{CommitInfo, TreeEntry};
-use git2::{Delta, Diff, DiffFormat, DiffOptions, Oid, Repository, Sort, Status, StatusOptions};
+use crate::types::{CommitInfo, HeadInfo, TreeEntry};
+use git2::{
+    BranchType, Delta, Diff, DiffFormat, DiffOptions, Oid, Repository, Sort, Status, StatusOptions,
+};
 use std::path::Path;
 
 /// Is `path` inside a git repository?
@@ -103,6 +105,57 @@ pub fn branch(path: &Path) -> Result<String, String> {
             .unwrap_or_default();
         Ok(format!("detached@{id}"))
     }
+}
+
+/// Branch + ahead/behind vs upstream, for the status bar.
+pub fn head_info(path: &Path) -> Result<HeadInfo, String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let head = match repo.head() {
+        Ok(h) => h,
+        Err(_) => {
+            return Ok(HeadInfo {
+                branch: String::new(),
+                ahead: 0,
+                behind: 0,
+            })
+        }
+    };
+
+    if !head.is_branch() {
+        let id = head
+            .target()
+            .map(|o| o.to_string().chars().take(7).collect::<String>())
+            .unwrap_or_default();
+        return Ok(HeadInfo {
+            branch: format!("detached@{id}"),
+            ahead: 0,
+            behind: 0,
+        });
+    }
+
+    let branch_name = head.shorthand().unwrap_or("").to_string();
+    let local_oid = head.target();
+
+    // Ahead/behind vs the tracking upstream, when one exists.
+    let (mut ahead, mut behind) = (0usize, 0usize);
+    if let (Some(local_oid), Ok(local_branch)) =
+        (local_oid, repo.find_branch(&branch_name, BranchType::Local))
+    {
+        if let Ok(upstream) = local_branch.upstream() {
+            if let Some(up_oid) = upstream.get().target() {
+                if let Ok((a, b)) = repo.graph_ahead_behind(local_oid, up_oid) {
+                    ahead = a;
+                    behind = b;
+                }
+            }
+        }
+    }
+
+    Ok(HeadInfo {
+        branch: branch_name,
+        ahead,
+        behind,
+    })
 }
 
 /// The most recent commits (newest first), for the timeline view.

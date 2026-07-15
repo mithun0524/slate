@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { gitBranch, gitTree } from "../lib/ipc";
+import { gitHeadInfo, gitTree, type HeadInfo } from "../lib/ipc";
 import type { IntentSource } from "../lib/ipc";
 
 type Source = IntentSource | "manual";
 
-// Bottom chrome: branch · change count · source indicator · pin · cwd.
+// Bottom chrome — Cursor-style: branch + sync + changes | source · pin · theme · encoding.
 export function StatusBar({
   refreshKey,
   isRepo,
@@ -24,18 +24,18 @@ export function StatusBar({
   themeLabel: string;
   onTheme: () => void;
 }) {
-  const [branch, setBranch] = useState("");
+  const [head, setHead] = useState<HeadInfo>({ branch: "", ahead: 0, behind: 0 });
   const [changes, setChanges] = useState(0);
 
   useEffect(() => {
     if (!isRepo) {
-      setBranch("");
+      setHead({ branch: "", ahead: 0, behind: 0 });
       setChanges(0);
       return;
     }
     let alive = true;
-    gitBranch()
-      .then((b) => alive && setBranch(b))
+    gitHeadInfo()
+      .then((h) => alive && setHead(h))
       .catch(() => {});
     gitTree()
       .then((t) => alive && setChanges(t.length))
@@ -54,7 +54,13 @@ export function StatusBar({
           <>
             <span className="sb-item" title="Current branch">
               <span className="sb-glyph">⎇</span>
-              {branch || "—"}
+              {head.branch || "—"}
+              {(head.ahead > 0 || head.behind > 0) && (
+                <span className="sb-sync">
+                  {head.behind > 0 && <span>{head.behind}↓</span>}
+                  {head.ahead > 0 && <span>{head.ahead}↑</span>}
+                </span>
+              )}
             </span>
             <span className="sb-item" title="Changed files">
               ● {changes}
@@ -79,6 +85,12 @@ export function StatusBar({
         <button className="sb-item btn" onClick={onTheme} title="Switch theme">
           {themeLabel}
         </button>
+        <span className="sb-item" title="Line endings">
+          LF
+        </span>
+        <span className="sb-item" title="Encoding">
+          UTF-8
+        </span>
         <span className="sb-item" title={cwd}>
           {dir}
         </span>

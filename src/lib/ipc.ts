@@ -62,7 +62,15 @@ export const readAsset = (path: string): Promise<string> =>
 
 export const listSpecs = (): Promise<string[]> => invoke("list_specs");
 
+export interface HeadInfo {
+  branch: string;
+  ahead: number;
+  behind: number;
+}
+
 export const gitBranch = (): Promise<string> => invoke("git_branch");
+
+export const gitHeadInfo = (): Promise<HeadInfo> => invoke("git_head_info");
 
 export const gitLog = (limit: number): Promise<CommitInfo[]> =>
   invoke("git_log", { limit });

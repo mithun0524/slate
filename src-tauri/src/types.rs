@@ -57,6 +57,14 @@ pub struct IntentEvent {
     pub source: IntentSource,
 }
 
+/// HEAD summary for the status bar.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HeadInfo {
+    pub branch: String,
+    pub ahead: usize,
+    pub behind: usize,
+}
+
 /// A commit for the timeline view.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommitInfo {

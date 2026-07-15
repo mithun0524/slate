@@ -13,7 +13,7 @@ use pty::PtySession;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, State};
-use types::{CommitInfo, TreeEntry};
+use types::{CommitInfo, HeadInfo, TreeEntry};
 
 #[derive(Default)]
 struct AppState {
@@ -115,6 +115,17 @@ fn git_branch(state: State<AppState>) -> Result<String, String> {
         .clone()
         .ok_or("no workspace open")?;
     git::branch(&root)
+}
+
+#[tauri::command]
+fn git_head_info(state: State<AppState>) -> Result<HeadInfo, String> {
+    let root = state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no workspace open")?;
+    git::head_info(&root)
 }
 
 #[tauri::command]
@@ -294,6 +305,7 @@ pub fn run() {
             git_tree,
             git_diff,
             git_branch,
+            git_head_info,
             git_log,
             git_commit_diff,
             read_text,
