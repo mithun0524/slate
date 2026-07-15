@@ -22,7 +22,13 @@ const md = new MarkdownIt({
 
 // Renders a markdown/spec file. Re-reads whenever `path` changes (the watcher
 // fires a fresh intent on every edit, which remounts/updates this).
-export function MarkdownView({ path }: { path: string }) {
+export function MarkdownView({
+  path,
+  refreshKey,
+}: {
+  path: string;
+  refreshKey: number;
+}) {
   const [raw, setRaw] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
 
@@ -34,7 +40,9 @@ export function MarkdownView({ path }: { path: string }) {
     return () => {
       alive = false;
     };
-  }, [path]);
+    // refreshKey bumps on every re-emitted intent so editing the *currently
+    // shown* spec re-reads it (same path would otherwise skip the effect).
+  }, [path, refreshKey]);
 
   const html = useMemo(() => md.render(raw), [raw]);
 

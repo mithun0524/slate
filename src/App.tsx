@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { SplitPane } from "./components/SplitPane";
 import { Terminal } from "./components/Terminal";
 import { PanelB } from "./components/PanelB";
@@ -23,6 +24,13 @@ function App() {
   const [source, setSource] = useState<Source>("classifier");
   const [pinned, setPinned] = useState(false);
   const [lastSpec, setLastSpec] = useState<string | null>(null);
+  const [recents, setRecents] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("vellum.recents") || "[]");
+    } catch {
+      return [];
+    }
+  });
 
   // `pinned` is read inside the intent listener; keep a ref so we don't need to
   // re-subscribe on every toggle.
@@ -46,15 +54,32 @@ function App() {
     };
   }, [apply]);
 
-  const doOpen = async () => {
+  const openWith = async (p: string) => {
+    const target = p.trim();
+    if (!target) return;
     try {
-      const repo = await openWorkspace(path.trim());
+      const repo = await openWorkspace(target);
       setIsRepo(repo);
       setOpened(true);
       setOpenErr(null);
+      const next = [target, ...recents.filter((r) => r !== target)].slice(0, 6);
+      setRecents(next);
+      localStorage.setItem("vellum.recents", JSON.stringify(next));
       apply({ kind: "tree" }, "manual");
     } catch (e) {
       setOpenErr(String(e));
+    }
+  };
+
+  const browse = async () => {
+    const sel = await openDialog({
+      directory: true,
+      multiple: false,
+      title: "Open workspace folder",
+    });
+    if (typeof sel === "string") {
+      setPath(sel);
+      openWith(sel);
     }
   };
 
@@ -69,20 +94,47 @@ function App() {
         <div className="gate-card">
           <h1 className="brand">Vellum</h1>
           <p className="tagline">terminal + reactive spec / git surface</p>
-          <label className="gate-label">Workspace folder</label>
+
+          <button className="btn primary big" onClick={browse}>
+            Open folder…
+          </button>
+
+          <div className="gate-or">or paste a path</div>
           <div className="gate-row">
             <input
               className="gate-input"
               placeholder="/Users/you/project"
               value={path}
               onChange={(e) => setPath(e.currentTarget.value)}
-              onKeyDown={(e) => e.key === "Enter" && doOpen()}
+              onKeyDown={(e) => e.key === "Enter" && openWith(path)}
               autoFocus
             />
-            <button className="btn primary" onClick={doOpen} disabled={!path.trim()}>
+            <button
+              className="btn"
+              onClick={() => openWith(path)}
+              disabled={!path.trim()}
+            >
               Open
             </button>
           </div>
+
+          {recents.length > 0 && (
+            <div className="recents">
+              <div className="recents-title">Recent</div>
+              {recents.map((r) => (
+                <button
+                  key={r}
+                  className="recent-row"
+                  onClick={() => openWith(r)}
+                  title={r}
+                >
+                  <span className="recent-name">{r.split("/").pop() || r}</span>
+                  <span className="recent-path">{r}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           {openErr && <div className="gate-err">{openErr}</div>}
         </div>
       </div>

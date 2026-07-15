@@ -16,7 +16,7 @@ export function PanelB({
 }) {
   switch (intent.kind) {
     case "spec":
-      return <MarkdownView path={intent.path} />;
+      return <MarkdownView path={intent.path} refreshKey={seq} />;
     case "diff":
       return <DiffView paths={intent.paths} refreshKey={seq} />;
     case "tree":

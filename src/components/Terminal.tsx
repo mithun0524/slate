@@ -37,9 +37,10 @@ export function Terminal() {
     let disposed = false;
     const unlisteners: Array<() => void> = [];
 
-    // Spawn the pty at the current size, then wire streams.
-    ptySpawn(term.cols, term.rows)
-      .then(async () => {
+    // Wire the streams BEFORE spawning, otherwise output the shell emits
+    // between spawn and listener-registration (prompt, banner) is lost.
+    (async () => {
+      try {
         const offData = await onPtyData((chunk) => term.write(chunk));
         const offExit = await onPtyExit((code) =>
           term.write(`\r\n\x1b[90m[process exited: ${code}]\x1b[0m\r\n`),
@@ -50,8 +51,11 @@ export function Terminal() {
           return;
         }
         unlisteners.push(offData, offExit);
-      })
-      .catch((e) => term.write(`\r\n\x1b[31m[pty error: ${e}]\x1b[0m\r\n`));
+        await ptySpawn(term.cols, term.rows);
+      } catch (e) {
+        term.write(`\r\n\x1b[31m[pty error: ${e}]\x1b[0m\r\n`);
+      }
+    })();
 
     const offInput = term.onData((data) => {
       ptyWrite(data).catch(() => {});

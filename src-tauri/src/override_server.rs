@@ -34,29 +34,34 @@ pub fn start(app: AppHandle) {
                 Ok(s) => s,
                 Err(_) => continue,
             };
-            let reader = BufReader::new(stream);
-            for line in reader.lines() {
-                let line = match line {
-                    Ok(l) => l,
-                    Err(_) => break,
-                };
-                let trimmed = line.trim();
-                if trimmed.is_empty() {
-                    continue;
-                }
-                match serde_json::from_str::<ViewIntent>(trimmed) {
-                    Ok(intent) => {
-                        let _ = app.emit(
-                            "vellum://intent",
-                            IntentEvent {
-                                intent,
-                                source: IntentSource::Override,
-                            },
-                        );
+            // Handle each connection on its own thread so a client that holds
+            // the socket open never blocks subsequent overrides.
+            let app = app.clone();
+            std::thread::spawn(move || {
+                let reader = BufReader::new(stream);
+                for line in reader.lines() {
+                    let line = match line {
+                        Ok(l) => l,
+                        Err(_) => break,
+                    };
+                    let trimmed = line.trim();
+                    if trimmed.is_empty() {
+                        continue;
                     }
-                    Err(e) => eprintln!("[vellum] bad override payload: {e}"),
+                    match serde_json::from_str::<ViewIntent>(trimmed) {
+                        Ok(intent) => {
+                            let _ = app.emit(
+                                "vellum://intent",
+                                IntentEvent {
+                                    intent,
+                                    source: IntentSource::Override,
+                                },
+                            );
+                        }
+                        Err(e) => eprintln!("[vellum] bad override payload: {e}"),
+                    }
                 }
-            }
+            });
         }
     });
 }

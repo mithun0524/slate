@@ -109,6 +109,63 @@ body {
   border-color: var(--accent);
   font-weight: 600;
 }
+.btn.big {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.gate-or {
+  text-align: center;
+  color: var(--fg-dim);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 10px;
+}
+
+.recents {
+  margin-top: 22px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.recents-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--fg-dim);
+  margin-bottom: 8px;
+}
+.recent-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.recent-row:hover {
+  background: var(--bg-3);
+  border-color: var(--border);
+}
+.recent-name {
+  color: var(--fg);
+  font-size: 13px;
+}
+.recent-path {
+  color: var(--fg-dim);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* --- app / split --- */
 .app {
