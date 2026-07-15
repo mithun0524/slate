@@ -12,8 +12,11 @@ import { SettingsDrawer } from "./components/SettingsDrawer";
 import { Welcome } from "./components/Welcome";
 import { ApprovalPrompt } from "./components/ApprovalPrompt";
 import { type ActivityEntry } from "./components/ActivityFeed";
+import { ReplayView } from "./components/ReplayView";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
 import {
+  gitDiff,
+  gitHeadInfo,
   onApproval,
   onApprovalExpired,
   onIntent,
@@ -55,6 +58,8 @@ function App() {
   const [activeTerm, setActiveTerm] = useState("t1");
   const [approvals, setApprovals] = useState<ApprovalReq[]>([]);
   const [history, setHistory] = useState<ActivityEntry[]>([]);
+  const [replay, setReplay] = useState<ActivityEntry | null>(null);
+  const entryId = useRef(0);
 
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
@@ -104,6 +109,7 @@ function App() {
   useEffect(() => applyTheme(theme), [theme]);
 
   const apply = useCallback((next: ViewIntent, src: Source) => {
+    setReplay(null); // any navigation / new work exits replay
     setIntent(next);
     setSource(src);
     setSeq((s) => s + 1);
@@ -113,11 +119,25 @@ function App() {
   useEffect(() => {
     const p = onIntent((ev) => {
       // Log every reactive event (even when pinned) — this is the movie of the work.
+      const id = ++entryId.current;
       setHistory((h) =>
-        [{ intent: ev.intent, source: ev.source, at: Date.now(), burst: ev.burst }, ...h].slice(0, 300),
+        [{ id, intent: ev.intent, source: ev.source, at: Date.now(), burst: ev.burst }, ...h].slice(
+          0,
+          300,
+        ),
       );
-      if (pinnedRef.current) return;
-      apply(ev.intent, ev.source);
+      // Snapshot the working-tree diff so this event is replayable later.
+      if (ev.intent.kind === "diff" || ev.intent.kind === "tree") {
+        Promise.all([
+          gitDiff([]).catch(() => ""),
+          gitHeadInfo().then((h) => h.branch).catch(() => ""),
+        ]).then(([patch, head]) => {
+          const p =
+            patch.length > 200000 ? patch.slice(0, 200000) + "\n… (snapshot truncated)" : patch;
+          setHistory((h) => h.map((e) => (e.id === id ? { ...e, patch: p, head } : e)));
+        });
+      }
+      if (!pinnedRef.current) apply(ev.intent, ev.source);
     });
     return () => {
       p.then((off) => off());
@@ -278,15 +298,22 @@ function App() {
             <div className="panel-b">
               <ViewTabs active={active} onSelect={navigate} />
               <div className="panel-body">
-                <PanelB
-                  intent={intent}
-                  seq={seq}
-                  onSelectFile={onSelectFile}
-                  onGitChanged={() => setSeq((s) => s + 1)}
-                  history={history}
-                  onReplay={(next) => apply(next, "manual")}
-                  onClearHistory={() => setHistory([])}
-                />
+                {replay ? (
+                  <ReplayView entry={replay} onClose={() => setReplay(null)} />
+                ) : (
+                  <PanelB
+                    intent={intent}
+                    seq={seq}
+                    onSelectFile={onSelectFile}
+                    onGitChanged={() => setSeq((s) => s + 1)}
+                    history={history}
+                    onReplay={(entry) => {
+                      if (entry.patch !== undefined) setReplay(entry);
+                      else apply(entry.intent, "manual");
+                    }}
+                    onClearHistory={() => setHistory([])}
+                  />
+                )}
               </div>
             </div>
           }

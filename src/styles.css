@@ -3041,6 +3041,64 @@ body.dragging-split * {
   }
 }
 
+/* ============ replay ============ */
+.replay-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.replay-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.replay-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+}
+.replay-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.replay-info {
+  flex: 1;
+  color: var(--fg-mut);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.replay-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--fg-mut);
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-size: 11px;
+}
+.replay-exit:hover {
+  color: var(--fg);
+  background: var(--bg-hover);
+}
+.act-replay {
+  color: var(--accent);
+}
+
 /* scrollbars */
 ::-webkit-scrollbar {
   width: 11px;

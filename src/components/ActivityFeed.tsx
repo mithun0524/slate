@@ -4,10 +4,15 @@ import { Icon } from "./ActivityBar";
 import type { FileChange, IntentSource, ViewIntent } from "../lib/ipc";
 
 export interface ActivityEntry {
+  id: number;
   intent: ViewIntent;
   source: IntentSource;
   at: number;
   burst?: FileChange[];
+  /** Working-tree diff patch captured at event time (diff/tree events). */
+  patch?: string;
+  /** Branch/HEAD label at event time. */
+  head?: string;
 }
 
 function rel(ms: number): string {
@@ -57,7 +62,7 @@ export function ActivityFeed({
   onClear,
 }: {
   history: ActivityEntry[];
-  onReplay: (intent: ViewIntent) => void;
+  onReplay: (entry: ActivityEntry) => void;
   onClear: () => void;
 }) {
   const [open, setOpen] = useState<Set<number>>(new Set());
@@ -96,7 +101,7 @@ export function ActivityFeed({
             return (
               <div className="act-row" key={idx}>
                 <div className="act-item">
-                  <button className="act-main" onClick={() => onReplay(e.intent)}>
+                  <button className="act-main" onClick={() => onReplay(e)}>
                     <span className="act-rail">
                       <span className={`act-dot src-${e.source}`} />
                     </span>
@@ -112,6 +117,7 @@ export function ActivityFeed({
                         <span className={`act-src src-${e.source}`}>{SOURCE_LABEL[e.source]}</span>
                         <span className="act-time">{rel(e.at)}</span>
                         {hasBurst && <span className="act-nfiles">{e.burst!.length} changed</span>}
+                        {e.patch !== undefined && <span className="act-replay">↺ replay</span>}
                       </span>
                     </span>
                   </button>

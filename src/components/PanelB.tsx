@@ -22,7 +22,7 @@ export function PanelB({
   onSelectFile: (path: string) => void;
   onGitChanged: () => void;
   history: ActivityEntry[];
-  onReplay: (intent: ViewIntent) => void;
+  onReplay: (entry: ActivityEntry) => void;
   onClearHistory: () => void;
 }) {
   switch (intent.kind) {
