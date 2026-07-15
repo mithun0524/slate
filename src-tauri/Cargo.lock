@@ -4012,11 +4012,13 @@ dependencies = [
  "git2",
  "notify",
  "portable-pty",
+ "regex",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",
+ "walkdir",
 ]
 
 [[package]]

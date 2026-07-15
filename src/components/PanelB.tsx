@@ -3,6 +3,7 @@ import { SpecView } from "./SpecView";
 import { TreeView } from "./TreeView";
 import { DiffView } from "./DiffView";
 import { TimelineView } from "./TimelineView";
+import { SearchView } from "./SearchView";
 
 // Pane B: renders whichever view the current intent selects. `seq` bumps on
 // every applied intent to force data re-fetches in the child views.
@@ -22,6 +23,8 @@ export function PanelB({
       return <DiffView paths={intent.paths} refreshKey={seq} />;
     case "log":
       return <TimelineView refreshKey={seq} />;
+    case "search":
+      return <SearchView onSelectFile={onSelectFile} />;
     case "tree":
     default:
       return <TreeView refreshKey={seq} onSelect={onSelectFile} />;

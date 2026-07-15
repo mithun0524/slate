@@ -11,7 +11,19 @@ export type ViewIntent =
   | { kind: "spec"; path: string }
   | { kind: "diff"; paths: string[] }
   | { kind: "tree" }
-  | { kind: "log" };
+  | { kind: "log" }
+  | { kind: "search" };
+
+export interface LineMatch {
+  line: number;
+  col: number;
+  len: number;
+  text: string;
+}
+export interface FileMatches {
+  path: string;
+  matches: LineMatch[];
+}
 
 export interface CommitInfo {
   hash: string;
@@ -64,6 +76,19 @@ export const listSpecs = (): Promise<string[]> => invoke("list_specs");
 
 export const searchDirs = (query: string): Promise<string[]> =>
   invoke("search_dirs", { query });
+
+export const searchText = (
+  query: string,
+  caseSensitive: boolean,
+  wholeWord: boolean,
+  regexMode: boolean,
+): Promise<FileMatches[]> =>
+  invoke("search_text", {
+    query,
+    caseSensitive,
+    wholeWord,
+    regexMode,
+  });
 
 export const cloneRepo = (url: string, parent: string): Promise<string> =>
   invoke("clone_repo", { url, parent });

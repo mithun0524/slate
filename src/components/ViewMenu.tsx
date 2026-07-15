@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Icon } from "./ActivityBar";
 import type { ActItem } from "./ActivityBar";
 
-const ITEMS: { id: ActItem; label: string }[] = [
-  { id: "specs", label: "Specs" },
-  { id: "changes", label: "Changes" },
-  { id: "diff", label: "Diff" },
-  { id: "timeline", label: "Timeline" },
+const ITEMS: { id: ActItem; label: string; kbd: string }[] = [
+  { id: "specs", label: "Specs", kbd: "⇧⌘E" },
+  { id: "changes", label: "Changes", kbd: "⌃⇧G" },
+  { id: "diff", label: "Diff", kbd: "⇧⌘D" },
+  { id: "timeline", label: "Timeline", kbd: "⇧⌘T" },
+  { id: "search", label: "Search", kbd: "⇧⌘F" },
 ];
 
 const LABEL: Record<ActItem, string> = {
@@ -14,18 +15,17 @@ const LABEL: Record<ActItem, string> = {
   changes: "Changes",
   diff: "Diff",
   timeline: "Timeline",
+  search: "Search",
 };
 
-// Cursor-style view-switcher menu at the top of the right pane: the current
-// view name + chevron; click opens a labeled dropdown of all views.
+// Cursor/VS Code-style view-switcher: current view name + chevron; click opens
+// a labeled dropdown of all views with shortcuts.
 export function ViewMenu({
   active,
   onSelect,
-  onSearch,
 }: {
   active: ActItem;
   onSelect: (id: ActItem) => void;
-  onSearch: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,7 +47,7 @@ export function ViewMenu({
         <span className={`vm-chev ${open ? "open" : ""}`}>▾</span>
       </button>
 
-      <button className="vm-search" title="Search (⌘K)" onClick={onSearch}>
+      <button className="vm-search" title="Search in files (⇧⌘F)" onClick={() => onSelect("search")}>
         <Icon name="search" />
       </button>
 
@@ -64,20 +64,9 @@ export function ViewMenu({
             >
               <Icon name={it.id} />
               <span className="vm-label">{it.label}</span>
+              <span className="vm-kbd">{it.kbd}</span>
             </button>
           ))}
-          <div className="vm-divider" />
-          <button
-            className="vm-item"
-            onClick={() => {
-              onSearch();
-              setOpen(false);
-            }}
-          >
-            <Icon name="search" />
-            <span className="vm-label">Search</span>
-            <span className="vm-kbd">⌘K</span>
-          </button>
         </div>
       )}
     </div>

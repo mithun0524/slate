@@ -47,6 +47,8 @@ function App() {
   const pinnedRef = useRef(pinned);
   pinnedRef.current = pinned;
   const wsRef = useRef<string>("");
+  const lastSpecRef = useRef<string | null>(null);
+  lastSpecRef.current = lastSpec;
 
   useEffect(() => applyTheme(theme), [theme]);
 
@@ -91,7 +93,24 @@ function App() {
       if (mod && (e.key === "k" || (e.shiftKey && e.key.toLowerCase() === "p"))) {
         e.preventDefault();
         setPaletteOpen((v) => !v);
-      } else if (e.key === "Escape") {
+        return;
+      }
+      if (mod && e.shiftKey) {
+        const map: Record<string, ViewIntent> = {
+          e: { kind: "spec", path: lastSpecRef.current ?? "" },
+          g: { kind: "tree" },
+          d: { kind: "diff", paths: [] },
+          t: { kind: "log" },
+          f: { kind: "search" },
+        };
+        const next = map[e.key.toLowerCase()];
+        if (next) {
+          e.preventDefault();
+          apply(next, "manual");
+          return;
+        }
+      }
+      if (e.key === "Escape") {
         setPaletteOpen(false);
         setSettingsOpen(false);
       }
@@ -128,6 +147,7 @@ function App() {
     else if (id === "changes") apply({ kind: "tree" }, "manual");
     else if (id === "diff") apply({ kind: "diff", paths: [] }, "manual");
     else if (id === "timeline") apply({ kind: "log" }, "manual");
+    else if (id === "search") apply({ kind: "search" }, "manual");
   };
 
   const active: ActItem =
@@ -137,7 +157,9 @@ function App() {
         ? "diff"
         : intent.kind === "log"
           ? "timeline"
-          : "changes";
+          : intent.kind === "search"
+            ? "search"
+            : "changes";
 
   if (!opened) {
     return <Welcome onOpen={openWith} recents={recents} />;
@@ -151,7 +173,7 @@ function App() {
           left={<Terminal themeId={theme} />}
           right={
             <div className="panel-b">
-              <ViewMenu active={active} onSelect={navigate} onSearch={() => setPaletteOpen(true)} />
+              <ViewMenu active={active} onSelect={navigate} />
               <div className="panel-body">
                 <PanelB intent={intent} seq={seq} onSelectFile={onSelectFile} />
               </div>

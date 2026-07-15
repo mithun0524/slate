@@ -12,8 +12,10 @@ use notify::RecommendedWatcher;
 use pty::PtySession;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use regex::RegexBuilder;
 use tauri::{AppHandle, State};
-use types::{CommitInfo, HeadInfo, TreeEntry};
+use types::{CommitInfo, FileMatches, HeadInfo, LineMatch, TreeEntry};
+use walkdir::WalkDir;
 
 #[derive(Default)]
 struct AppState {
@@ -303,6 +305,108 @@ fn search_dirs(query: String) -> Vec<String> {
     scored.into_iter().take(24).map(|(_, p)| p).collect()
 }
 
+/// Full-text search across the workspace. Returns matches grouped by file.
+#[tauri::command]
+fn search_text(
+    state: State<AppState>,
+    query: String,
+    case_sensitive: bool,
+    whole_word: bool,
+    regex_mode: bool,
+) -> Result<Vec<FileMatches>, String> {
+    let root = state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no workspace open")?;
+    if query.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut pat = if regex_mode {
+        query.clone()
+    } else {
+        regex::escape(&query)
+    };
+    if whole_word {
+        pat = format!(r"\b{pat}\b");
+    }
+    let re = RegexBuilder::new(&pat)
+        .case_insensitive(!case_sensitive)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    const MAX_FILES: usize = 300;
+    const MAX_TOTAL: usize = 3000;
+    const PER_FILE: usize = 40;
+    const MAX_LINE: usize = 500;
+
+    let mut out: Vec<FileMatches> = Vec::new();
+    let mut total = 0usize;
+
+    let walker = WalkDir::new(&root).into_iter().filter_entry(|e| {
+        let name = e.file_name().to_string_lossy();
+        // Skip ignored / hidden directories.
+        if e.file_type().is_dir() {
+            return !SPEC_IGNORED.iter().any(|ig| *ig == name) && !name.starts_with('.');
+        }
+        true
+    });
+
+    for entry in walker.flatten() {
+        if out.len() >= MAX_FILES || total >= MAX_TOTAL {
+            break;
+        }
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let path = entry.path();
+        // Read as text; skip binaries / unreadable / huge files.
+        let content = match std::fs::read(path) {
+            Ok(b) if b.len() <= 2 * 1024 * 1024 && !b.contains(&0) => b,
+            _ => continue,
+        };
+        let text = match String::from_utf8(content) {
+            Ok(t) => t,
+            Err(_) => continue,
+        };
+
+        let mut matches: Vec<LineMatch> = Vec::new();
+        for (i, line) in text.lines().enumerate() {
+            if let Some(m) = re.find(line) {
+                let col = line[..m.start()].chars().count() as u32;
+                let len = m.as_str().chars().count() as u32;
+                let shown: String = if line.chars().count() > MAX_LINE {
+                    line.chars().take(MAX_LINE).collect()
+                } else {
+                    line.to_string()
+                };
+                matches.push(LineMatch {
+                    line: (i + 1) as u32,
+                    col,
+                    len,
+                    text: shown,
+                });
+                total += 1;
+                if matches.len() >= PER_FILE || total >= MAX_TOTAL {
+                    break;
+                }
+            }
+        }
+        if !matches.is_empty() {
+            let rel = path
+                .strip_prefix(&root)
+                .unwrap_or(path)
+                .to_string_lossy()
+                .to_string();
+            out.push(FileMatches { path: rel, matches });
+        }
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(out)
+}
+
 /// Directory names never descended into when listing specs.
 const SPEC_IGNORED: &[&str] = &[
     ".git",
@@ -437,6 +541,7 @@ pub fn run() {
             read_asset,
             list_specs,
             search_dirs,
+            search_text,
             clone_repo,
             create_project
         ])

@@ -38,6 +38,25 @@ pub enum ViewIntent {
     Tree,
     /// Show the commit timeline.
     Log,
+    /// Show the full-text search view.
+    Search,
+}
+
+/// One matching line within a file (for the search view).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LineMatch {
+    pub line: u32,
+    /// Char offset of the match within `text`.
+    pub col: u32,
+    pub len: u32,
+    pub text: String,
+}
+
+/// All matches within one file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMatches {
+    pub path: String,
+    pub matches: Vec<LineMatch>,
 }
 
 /// Where a `ViewIntent` came from — for debugging / UI hinting.

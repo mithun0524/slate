@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type ActItem = "specs" | "changes" | "diff" | "timeline";
+export type ActItem = "specs" | "changes" | "diff" | "timeline" | "search";
 
 const ICONS: Record<string, ReactNode> = {
   specs: (
