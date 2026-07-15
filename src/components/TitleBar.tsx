@@ -1,3 +1,5 @@
+import { Logo } from "./Logo";
+
 // Top chrome: brand + cwd breadcrumb (left), Cursor-style center command pill.
 export function TitleBar({
   cwd,
@@ -13,7 +15,8 @@ export function TitleBar({
   return (
     <div className="title-bar" data-tauri-drag-region>
       <div className="tb-left">
-        <span className="tb-brand">Vellum</span>
+        <Logo className="tb-logo" />
+        <span className="tb-brand">Slate</span>
         <span className="tb-sep">—</span>
         <span className="tb-ws">{name}</span>
         <span className="tb-crumb">
