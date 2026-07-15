@@ -36,11 +36,17 @@ export function SplitPane({
     dragging.current = true;
     setActive(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+    window.getSelection()?.removeAllRanges();
   }, []);
 
   const endDrag = useCallback(() => {
     dragging.current = false;
     setActive(false);
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+    window.getSelection()?.removeAllRanges();
   }, []);
 
   return (
