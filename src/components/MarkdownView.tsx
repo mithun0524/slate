@@ -5,7 +5,9 @@ import "highlight.js/styles/github-dark.css";
 import { readText } from "../lib/ipc";
 
 const md = new MarkdownIt({
-  html: false,
+  // Render embedded HTML (README logos, shields badges, <p align>, tables).
+  // Files are the user's own workspace content — trusted, like GitHub's viewer.
+  html: true,
   linkify: true,
   typographer: true,
   highlight: (code, lang) => {
