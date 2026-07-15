@@ -107,6 +107,17 @@ fn git_diff(state: State<AppState>, paths: Vec<String>) -> Result<String, String
 }
 
 #[tauri::command]
+fn git_branch(state: State<AppState>) -> Result<String, String> {
+    let root = state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("no workspace open")?;
+    git::branch(&root)
+}
+
+#[tauri::command]
 fn git_log(state: State<AppState>, limit: u32) -> Result<Vec<CommitInfo>, String> {
     let root = state
         .workspace
@@ -282,6 +293,7 @@ pub fn run() {
             pty_resize,
             git_tree,
             git_diff,
+            git_branch,
             git_log,
             git_commit_diff,
             read_text,

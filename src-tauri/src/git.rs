@@ -86,6 +86,25 @@ fn print_patch(diff: &Diff) -> Result<String, String> {
     Ok(buf)
 }
 
+/// Current branch name (or a short detached-HEAD label). Empty if no HEAD yet.
+pub fn branch(path: &Path) -> Result<String, String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let head = match repo.head() {
+        Ok(h) => h,
+        Err(_) => return Ok(String::new()),
+    };
+    if head.is_branch() {
+        Ok(head.shorthand().unwrap_or("").to_string())
+    } else {
+        // Detached: show the short commit id.
+        let id = head
+            .target()
+            .map(|o| o.to_string().chars().take(7).collect::<String>())
+            .unwrap_or_default();
+        Ok(format!("detached@{id}"))
+    }
+}
+
 /// The most recent commits (newest first), for the timeline view.
 pub fn log(path: &Path, limit: usize) -> Result<Vec<CommitInfo>, String> {
     let repo = Repository::discover(path).map_err(|e| e.to_string())?;

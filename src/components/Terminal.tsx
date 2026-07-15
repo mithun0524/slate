@@ -2,34 +2,35 @@ import { useEffect, useRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
-import {
-  onPtyData,
-  onPtyExit,
-  ptyResize,
-  ptySpawn,
-  ptyWrite,
-} from "../lib/ipc";
+import { onPtyData, onPtyExit, ptyResize, ptySpawn, ptyWrite } from "../lib/ipc";
+import { THEMES, type ThemeId } from "../lib/themes";
+
+function termColors(id: ThemeId) {
+  const t = THEMES.find((x) => x.id === id) ?? THEMES[0];
+  return {
+    background: t.vars["--term-bg"] ?? t.vars["--bg-1"],
+    foreground: t.vars["--fg"],
+    cursor: t.vars["--accent"],
+    selectionBackground: "#264f78",
+  };
+}
 
 // Pane A: a real terminal wired to the Rust pty. Claude Code runs here.
-export function Terminal() {
+export function Terminal({ themeId }: { themeId: ThemeId }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const termRef = useRef<XTerm | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
 
     const term = new XTerm({
-      fontFamily:
-        'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace',
+      fontFamily: '"SF Mono", ui-monospace, Menlo, Consolas, monospace',
       fontSize: 13,
       cursorBlink: true,
-      theme: {
-        background: "#1e1e1e",
-        foreground: "#cccccc",
-        cursor: "#e2b23c",
-        selectionBackground: "#264f78",
-      },
+      theme: termColors(themeId),
     });
+    termRef.current = term;
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(host);
@@ -38,8 +39,6 @@ export function Terminal() {
     let disposed = false;
     const unlisteners: Array<() => void> = [];
 
-    // Wire the streams BEFORE spawning, otherwise output the shell emits
-    // between spawn and listener-registration (prompt, banner) is lost.
     (async () => {
       try {
         const offData = await onPtyData((chunk) => term.write(chunk));
@@ -78,8 +77,14 @@ export function Terminal() {
       offInput.dispose();
       unlisteners.forEach((fn) => fn());
       term.dispose();
+      termRef.current = null;
     };
   }, []);
+
+  // Recolor live when the theme changes.
+  useEffect(() => {
+    if (termRef.current) termRef.current.options.theme = termColors(themeId);
+  }, [themeId]);
 
   return <div className="terminal-host" ref={hostRef} />;
 }

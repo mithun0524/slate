@@ -4,6 +4,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
+/// Port of the agent override socket (mirrors override_server::PORT in Rust).
+export const OVERRIDE_PORT = 8477;
+
 export type ViewIntent =
   | { kind: "spec"; path: string }
   | { kind: "diff"; paths: string[] }
@@ -58,6 +61,8 @@ export const readAsset = (path: string): Promise<string> =>
   invoke("read_asset", { path });
 
 export const listSpecs = (): Promise<string[]> => invoke("list_specs");
+
+export const gitBranch = (): Promise<string> => invoke("git_branch");
 
 export const gitLog = (limit: number): Promise<CommitInfo[]> =>
   invoke("git_log", { limit });
