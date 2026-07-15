@@ -1,4 +1,4 @@
-// The Slate mark: a rounded square (the surface) with a split line — the two
+// The Slate mark: a window (the surface) with a filled left pane — the two
 // panes (terminal | reactive view). Monochrome, uses currentColor.
 export function Logo({ className }: { className?: string }) {
   return (
@@ -7,11 +7,11 @@ export function Logo({ className }: { className?: string }) {
       viewBox="0 0 32 32"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.3"
+      strokeWidth="2.2"
       strokeLinejoin="round"
     >
-      <rect x="3.4" y="3.4" width="25.2" height="25.2" rx="7" />
-      <path d="M12.5 4.2 V27.8" strokeWidth="2" opacity="0.85" />
+      <rect x="3.6" y="3.6" width="24.8" height="24.8" rx="7" />
+      <rect x="7" y="7.4" width="6" height="17.2" rx="2" fill="currentColor" stroke="none" />
     </svg>
   );
 }

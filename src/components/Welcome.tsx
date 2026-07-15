@@ -6,17 +6,36 @@ import { Logo } from "./Logo";
 
 type Mode = "home" | "clone" | "new" | "search";
 
-const ActionIcon = ({ d }: { d: string }) => (
-  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
+const IconWrap = ({ children }: { children: React.ReactNode }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+    {children}
   </svg>
 );
 
-const ICON = {
-  folder: "M2.5 5.5A1.5 1.5 0 014 4h3l1.8 1.8H16A1.5 1.5 0 0117.5 7.3v7.2A1.5 1.5 0 0116 16H4a1.5 1.5 0 01-1.5-1.5z",
-  git: "M10 3v6m0 5v3M5 7a2.5 2.5 0 105 0 2.5 2.5 0 00-5 0zm5 5a2.5 2.5 0 105 0 2.5 2.5 0 00-5 0z",
-  plus: "M10 4v12M4 10h12",
-  search: "M8.5 3a5.5 5.5 0 104 9.3l3.5 3.5M8.5 3a5.5 5.5 0 010 11",
+const icons = {
+  open: (
+    <IconWrap>
+      <path d="M3 7.5A1.5 1.5 0 014.5 6H9l2 2h8.5A1.5 1.5 0 0121 9.5v8A1.5 1.5 0 0119.5 19h-15A1.5 1.5 0 013 17.5z" />
+    </IconWrap>
+  ),
+  clone: (
+    <IconWrap>
+      <path d="M12 3v10m0 0l-3.4-3.4M12 13l3.4-3.4" />
+      <path d="M4 15v3.5A1.5 1.5 0 005.5 20h13a1.5 1.5 0 001.5-1.5V15" />
+    </IconWrap>
+  ),
+  create: (
+    <IconWrap>
+      <path d="M3 7.5A1.5 1.5 0 014.5 6H9l2 2h8.5A1.5 1.5 0 0121 9.5v8A1.5 1.5 0 0119.5 19h-15A1.5 1.5 0 013 17.5z" />
+      <path d="M12 11.5v4.5M9.75 13.75h4.5" />
+    </IconWrap>
+  ),
+  search: (
+    <IconWrap>
+      <circle cx="11" cy="11" r="6" />
+      <path d="M20 20l-4.4-4.4" />
+    </IconWrap>
+  ),
 };
 
 // Shorten a home-rooted path to ~ for display.
@@ -136,27 +155,19 @@ export function Welcome({
           <>
             <div className="wl-grid wl-anim" style={{ animationDelay: "60ms" }}>
               <button className="wl-card" onClick={browse}>
-                <span className="wl-card-ic">
-                  <ActionIcon d={ICON.folder} />
-                </span>
+                <span className="wl-card-ic">{icons.open}</span>
                 <span className="wl-card-title">Open project</span>
               </button>
               <button className="wl-card" onClick={() => setMode("clone")}>
-                <span className="wl-card-ic">
-                  <ActionIcon d={ICON.git} />
-                </span>
+                <span className="wl-card-ic">{icons.clone}</span>
                 <span className="wl-card-title">Clone repo</span>
               </button>
               <button className="wl-card" onClick={() => setMode("new")}>
-                <span className="wl-card-ic">
-                  <ActionIcon d={ICON.plus} />
-                </span>
+                <span className="wl-card-ic">{icons.create}</span>
                 <span className="wl-card-title">New project</span>
               </button>
               <button className="wl-card" onClick={() => setMode("search")}>
-                <span className="wl-card-ic">
-                  <ActionIcon d={ICON.search} />
-                </span>
+                <span className="wl-card-ic">{icons.search}</span>
                 <span className="wl-card-title">Search machine</span>
               </button>
             </div>
