@@ -899,11 +899,13 @@ body {
 }
 .wl-del {
   background: var(--wl-del-bg);
-  color: var(--wl-del-fg);
+  color: var(--fg);
+  font-weight: 600;
 }
 .wl-add {
   background: var(--wl-add-bg);
-  color: var(--wl-add-fg);
+  color: var(--fg);
+  font-weight: 600;
 }
 
 /* mini segmented (diff mode toggle) */
