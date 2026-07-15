@@ -216,6 +216,12 @@ fn git_unstage(state: State<AppState>, paths: Vec<String>) -> Result<(), String>
 }
 
 #[tauri::command]
+fn git_discard(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
+    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    git::discard(&root, &paths)
+}
+
+#[tauri::command]
 fn git_commit(state: State<AppState>, message: String) -> Result<String, String> {
     let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
     git::commit(&root, &message)
@@ -663,6 +669,7 @@ pub fn run() {
             git_log,
             git_stage,
             git_unstage,
+            git_discard,
             git_commit,
             git_commit_diff,
             read_text,

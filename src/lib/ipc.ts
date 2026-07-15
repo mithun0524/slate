@@ -125,6 +125,9 @@ export const gitStage = (paths: string[]): Promise<void> =>
 export const gitUnstage = (paths: string[]): Promise<void> =>
   invoke("git_unstage", { paths });
 
+export const gitDiscard = (paths: string[]): Promise<void> =>
+  invoke("git_discard", { paths });
+
 export const gitCommit = (message: string): Promise<string> =>
   invoke("git_commit", { message });
 

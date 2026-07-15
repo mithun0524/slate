@@ -1,6 +1,6 @@
 import type { ViewIntent } from "../lib/ipc";
 import { SpecView } from "./SpecView";
-import { TreeView } from "./TreeView";
+import { SourceControl } from "./SourceControl";
 import { DiffView } from "./DiffView";
 import { TimelineView } from "./TimelineView";
 import { SearchView } from "./SearchView";
@@ -29,6 +29,6 @@ export function PanelB({
       return <SearchView onSelectFile={onSelectFile} />;
     case "tree":
     default:
-      return <TreeView refreshKey={seq} onSelect={onSelectFile} onChanged={onGitChanged} />;
+      return <SourceControl refreshKey={seq} onSelect={onSelectFile} onChanged={onGitChanged} />;
   }
 }

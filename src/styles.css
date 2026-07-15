@@ -1848,6 +1848,214 @@ body {
   margin: 4px 6px;
 }
 
+/* ============ source control panel ============ */
+.scm-commit {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.scm-msg {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 11px;
+  color: var(--fg);
+  font-size: 12.5px;
+}
+.scm-msg:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.scm-commit-btn {
+  position: relative;
+  display: flex;
+}
+.scm-commit-main {
+  flex: 1;
+  background: var(--accent);
+  color: #141416;
+  border: none;
+  border-radius: 8px 0 0 8px;
+  padding: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.scm-commit-main:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.scm-commit-more {
+  width: 30px;
+  background: var(--accent);
+  color: #141416;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  font-size: 12px;
+}
+.scm-commit-main:hover:not(:disabled),
+.scm-commit-more:hover {
+  filter: brightness(1.08);
+}
+.scm-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 200px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
+  padding: 5px;
+  z-index: 60;
+  animation: popIn 0.14s ease both;
+}
+.scm-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.scm-menu button:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.scm-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.scm-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 16px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.scm-section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 4px;
+  color: var(--fg-mut);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.scm-section-title {
+  flex: 1;
+  font-weight: 600;
+}
+.scm-section-actions {
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+}
+.scm-section-head:hover .scm-section-actions {
+  opacity: 1;
+}
+.scm-count {
+  background: var(--bg-3);
+  color: var(--fg-mut);
+  border-radius: 10px;
+  padding: 0 7px;
+  font-size: 10px;
+}
+.scm-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.scm-row:hover {
+  background: var(--bg-hover);
+}
+.scm-row .fi {
+  width: 15px;
+  height: 15px;
+}
+.scm-name {
+  color: var(--fg);
+  flex: 0 0 auto;
+}
+.scm-dir {
+  color: var(--fg-dim);
+  font-size: 11px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scm-actions {
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  flex: 0 0 auto;
+}
+.scm-row:hover .scm-actions {
+  opacity: 1;
+}
+.scm-act {
+  width: 22px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: none;
+  color: var(--fg-mut);
+  cursor: pointer;
+  border-radius: 5px;
+}
+.scm-act svg {
+  width: 15px;
+  height: 15px;
+}
+.scm-act:hover {
+  color: var(--fg);
+  background: var(--bg-3);
+}
+.scm-status {
+  width: 16px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+  flex: 0 0 auto;
+}
+.scm-status.st-modified,
+.scm-row.st-modified .scm-name {
+  color: #e0b04a;
+}
+.scm-status.st-new,
+.scm-status.st-untracked,
+.scm-row.st-new .scm-name,
+.scm-row.st-untracked .scm-name {
+  color: var(--add);
+}
+.scm-status.st-deleted,
+.scm-row.st-deleted .scm-name {
+  color: var(--del);
+}
+.scm-status.st-renamed,
+.scm-row.st-renamed .scm-name {
+  color: var(--hunk);
+}
+
 /* ============ git commit bar + staging ============ */
 .commit-bar {
   display: flex;

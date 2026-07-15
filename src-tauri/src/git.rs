@@ -2,7 +2,8 @@
 
 use crate::types::{CommitInfo, HeadInfo, TreeEntry};
 use git2::{
-    BranchType, Delta, Diff, DiffFormat, DiffOptions, Oid, Repository, Sort, Status, StatusOptions,
+    build::CheckoutBuilder, BranchType, Delta, Diff, DiffFormat, DiffOptions, Oid, Repository,
+    Sort, Status, StatusOptions,
 };
 use std::path::Path;
 
@@ -121,6 +122,50 @@ pub fn unstage(path: &Path, paths: &[String]) -> Result<(), String> {
         let _ = index.remove_path(std::path::Path::new(p));
     }
     index.write().map_err(|e| e.to_string())
+}
+
+/// Discard working-tree changes for the given (repo-relative) paths: untracked
+/// files are deleted, tracked changes are reverted to HEAD (and unstaged).
+pub fn discard(path: &Path, paths: &[String]) -> Result<(), String> {
+    let repo = Repository::discover(path).map_err(|e| e.to_string())?;
+    let workdir = repo.workdir().ok_or("bare repo")?.to_path_buf();
+
+    let mut sopts = StatusOptions::new();
+    sopts.include_untracked(true).recurse_untracked_dirs(true);
+    let statuses = repo.statuses(Some(&mut sopts)).map_err(|e| e.to_string())?;
+    let mut status_of: std::collections::HashMap<String, Status> = std::collections::HashMap::new();
+    for e in statuses.iter() {
+        if let Some(p) = e.path() {
+            status_of.insert(p.to_string(), e.status());
+        }
+    }
+
+    let mut co_paths: Vec<String> = Vec::new();
+    for p in paths {
+        let st = status_of.get(p).copied().unwrap_or(Status::empty());
+        if st.contains(Status::WT_NEW) && !st.intersects(Status::INDEX_NEW) {
+            // purely untracked -> delete
+            let _ = std::fs::remove_file(workdir.join(p));
+        } else {
+            co_paths.push(p.clone());
+        }
+    }
+
+    if !co_paths.is_empty() {
+        // Unstage to HEAD first, then restore the working files.
+        if let Ok(head_ref) = repo.head() {
+            if let Ok(obj) = head_ref.peel(git2::ObjectType::Commit) {
+                let _ = repo.reset_default(Some(&obj), co_paths.iter());
+            }
+        }
+        let mut cb = CheckoutBuilder::new();
+        cb.force();
+        for p in &co_paths {
+            cb.path(p);
+        }
+        repo.checkout_head(Some(&mut cb)).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Commit the staged index with `message`. Returns the new short hash.
