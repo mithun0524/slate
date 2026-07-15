@@ -148,9 +148,9 @@ function App() {
         right={
           <div className="panel-b">
             <div className="panel-toolbar">
-              <div className="tabs">
+              <div className="segmented" role="tablist">
                 <button
-                  className={`tab ${intent.kind === "spec" ? "on" : ""}`}
+                  className={`seg ${intent.kind === "spec" ? "on" : ""}`}
                   disabled={!lastSpec}
                   onClick={() =>
                     lastSpec && apply({ kind: "spec", path: lastSpec }, "manual")
@@ -159,27 +159,30 @@ function App() {
                   Spec
                 </button>
                 <button
-                  className={`tab ${intent.kind === "tree" ? "on" : ""}`}
+                  className={`seg ${intent.kind === "tree" ? "on" : ""}`}
                   onClick={() => apply({ kind: "tree" }, "manual")}
                 >
                   Tree
                 </button>
                 <button
-                  className={`tab ${intent.kind === "diff" ? "on" : ""}`}
+                  className={`seg ${intent.kind === "diff" ? "on" : ""}`}
                   onClick={() => apply({ kind: "diff", paths: [] }, "manual")}
                 >
                   Diff
                 </button>
               </div>
               <div className="toolbar-right">
-                {!isRepo && <span className="badge warn">not a git repo</span>}
-                <span className={`badge src-${source}`}>{source}</span>
+                {!isRepo && <span className="badge warn">no git</span>}
+                <span className={`src-dot src-${source}`} title={`source: ${source}`}>
+                  <span className="dot" />
+                  {source}
+                </span>
                 <button
                   className={`pin ${pinned ? "on" : ""}`}
-                  title={pinned ? "Unpin (resume auto-switch)" : "Pin this view"}
+                  title={pinned ? "Unpin — resume auto-switching" : "Pin this view"}
                   onClick={() => setPinned((v) => !v)}
                 >
-                  {pinned ? "📌 pinned" : "pin"}
+                  {pinned ? "◆ pinned" : "◇ pin"}
                 </button>
               </div>
             </div>

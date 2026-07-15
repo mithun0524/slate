@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { gitTree, type TreeEntry } from "../lib/ipc";
 
-// A node in the assembled directory tree.
 interface Node {
   name: string;
   path: string;
@@ -35,7 +34,7 @@ function buildTree(entries: TreeEntry[]): Node {
 
 const STATUS_MARK: Record<string, string> = {
   new: "A",
-  untracked: "?",
+  untracked: "U",
   modified: "M",
   deleted: "D",
   renamed: "R",
@@ -64,29 +63,33 @@ function NodeRow({
     <>
       {node.name && (
         <div
-          className={`tree-row ${node.status ? `st-${node.status}` : ""}`}
-          style={{ paddingLeft: 8 + depth * 14 }}
+          className={`tree-row ${isDir ? "is-dir" : ""} ${node.status ? `st-${node.status}` : ""}`}
+          style={{ paddingLeft: 10 + depth * 15 }}
           onClick={() => !isDir && onSelect(node.path)}
         >
-          <span className="tree-glyph">{isDir ? "▸" : "•"}</span>
+          <span className="tree-glyph">{isDir ? "▸" : ""}</span>
           <span className="tree-name">{node.name}</span>
           {node.status && node.status !== "clean" && (
-            <span className={`tree-mark st-${node.status}`}>
-              {node.staged ? "●" : ""}
+            <span className={`tree-chip st-${node.status}`}>
+              {node.staged && <span className="staged-dot" />}
               {STATUS_MARK[node.status] ?? "?"}
             </span>
           )}
         </div>
       )}
       {kids.map((k) => (
-        <NodeRow key={k.path} node={k} depth={node.name ? depth + 1 : depth} onSelect={onSelect} />
+        <NodeRow
+          key={k.path}
+          node={k}
+          depth={node.name ? depth + 1 : depth}
+          onSelect={onSelect}
+        />
       ))}
     </>
   );
 }
 
-// Pane B / tree view: git-status-colored source tree. `refreshKey` changes to
-// force a re-fetch (bumped whenever a tree intent arrives).
+// Pane B / tree view: git-status source tree with a change summary header.
 export function TreeView({
   refreshKey,
   onSelect,
@@ -94,34 +97,50 @@ export function TreeView({
   refreshKey: number;
   onSelect: (path: string) => void;
 }) {
-  const [tree, setTree] = useState<Node | null>(null);
+  const [entries, setEntries] = useState<TreeEntry[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
     gitTree()
-      .then((entries) => {
-        if (!alive) return;
-        setTree(buildTree(entries));
-        setErr(null);
-      })
+      .then((e) => alive && (setEntries(e), setErr(null)))
       .catch((e) => alive && setErr(String(e)));
     return () => {
       alive = false;
     };
   }, [refreshKey]);
 
+  const tree = useMemo(() => buildTree(entries), [entries]);
+  const summary = useMemo(() => {
+    const s = { staged: 0, changed: 0 };
+    for (const e of entries) e.staged ? s.staged++ : s.changed++;
+    return s;
+  }, [entries]);
+
   return (
     <div className="view tree-view">
-      <div className="view-crumb">source tree · changed files</div>
+      <div className="view-crumb">
+        <span className="crumb-label">source · changes</span>
+        {entries.length > 0 && (
+          <span className="crumb-stat">
+            {summary.staged > 0 && (
+              <span className="pill staged">{summary.staged} staged</span>
+            )}
+            <span className="pill">{summary.changed} changed</span>
+          </span>
+        )}
+      </div>
       {err ? (
         <div className="view-empty">{err}</div>
-      ) : tree && tree.children.size > 0 ? (
+      ) : entries.length > 0 ? (
         <div className="tree-scroll">
           <NodeRow node={tree} depth={0} onSelect={onSelect} />
         </div>
       ) : (
-        <div className="view-empty">Working tree clean — no changes.</div>
+        <div className="view-empty">
+          <div className="empty-glyph">✓</div>
+          Working tree clean.
+        </div>
       )}
     </div>
   );
