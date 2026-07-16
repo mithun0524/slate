@@ -52,6 +52,12 @@ body,
 #root {
   height: 100%;
   margin: 0;
+  overflow: hidden;
+}
+/* Desktop app: the window itself never scrolls — inner panes own their scroll. */
+#root {
+  position: fixed;
+  inset: 0;
 }
 body {
   background: var(--bg);
