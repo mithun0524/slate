@@ -367,7 +367,8 @@ body.dragging-split {
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 5px 6px;
+  height: 41px;
+  padding: 0 6px;
   background: var(--bg-2);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -1813,7 +1814,8 @@ body.dragging-split {
   justify-content: center;
   align-items: center;
   gap: 3px;
-  padding: 6px 8px;
+  height: 41px;
+  padding: 0 8px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-2);
   flex: 0 0 auto;
