@@ -18,16 +18,22 @@ pub fn classify(burst: &FileBurst) -> ViewIntent {
         return ViewIntent::Tree;
     }
 
-    // 1. Spec wins: the most recent markdown touch in the burst.
-    if let Some(md) = burst
+    // 1. Spec wins — but only when markdown is *created* or is the majority of
+    //    the burst. A spec merely touched amid code edits should show the diff.
+    let md_live: Vec<&crate::types::FileChange> = burst
         .events
         .iter()
-        .rev()
-        .find(|c| is_markdown(&c.path) && c.kind != ChangeKind::Deleted)
-    {
-        return ViewIntent::Spec {
-            path: md.path.clone(),
-        };
+        .filter(|c| is_markdown(&c.path) && c.kind != ChangeKind::Deleted)
+        .collect();
+    if !md_live.is_empty() {
+        let non_md = burst.events.iter().filter(|c| !is_markdown(&c.path)).count();
+        let md_created = md_live.iter().any(|c| c.kind == ChangeKind::Created);
+        if md_created || md_live.len() >= non_md {
+            // most recent live markdown
+            let path = md_live.last().unwrap().path.clone();
+            return ViewIntent::Spec { path };
+        }
+        // else: fall through — code edits dominate, show the diff.
     }
 
     // Tally structural vs content changes.
@@ -147,6 +153,41 @@ mod tests {
                 paths: vec!["a.rs".into(), "b.rs".into()]
             }
         );
+    }
+
+    #[test]
+    fn markdown_amid_code_edits_shows_diff() {
+        // A spec touched while code dominates -> show the diff, not the spec.
+        let b = burst(vec![
+            ("README.md", ChangeKind::Modified),
+            ("src/a.rs", ChangeKind::Modified),
+            ("src/b.rs", ChangeKind::Modified),
+        ]);
+        assert_eq!(
+            classify(&b),
+            ViewIntent::Diff {
+                paths: vec!["README.md".into(), "src/a.rs".into(), "src/b.rs".into()]
+            }
+        );
+    }
+
+    #[test]
+    fn new_markdown_always_shows_spec() {
+        let b = burst(vec![
+            ("src/a.rs", ChangeKind::Modified),
+            ("src/b.rs", ChangeKind::Modified),
+            ("docs/new.md", ChangeKind::Created),
+        ]);
+        assert_eq!(
+            classify(&b),
+            ViewIntent::Spec { path: "docs/new.md".into() }
+        );
+    }
+
+    #[test]
+    fn lone_markdown_edit_shows_spec() {
+        let b = burst(vec![("notes.md", ChangeKind::Modified)]);
+        assert_eq!(classify(&b), ViewIntent::Spec { path: "notes.md".into() });
     }
 
     #[test]

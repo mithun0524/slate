@@ -346,7 +346,12 @@ export function DiffView({ paths, refreshKey }: { paths: string[]; refreshKey: n
         </span>
       </div>
       {err ? (
-        <div className="view-empty">{err}</div>
+        <div className="view-empty">
+          <div className="empty-glyph">⎇</div>
+          {/could not find repository|NotFound|class=Repository/i.test(err)
+            ? "Not a git repository."
+            : err}
+        </div>
       ) : files.length === 0 ? (
         <div className="view-empty">
           <div className="empty-glyph">≡</div>

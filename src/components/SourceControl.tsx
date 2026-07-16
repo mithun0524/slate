@@ -186,7 +186,12 @@ export function SourceControl({
       {note && <div className="commit-note">{note}</div>}
 
       {err ? (
-        <div className="view-empty">{err}</div>
+        <div className="view-empty">
+          <div className="empty-glyph">⎇</div>
+          {/could not find repository|NotFound|class=Repository/i.test(err)
+            ? "Not a git repository."
+            : err}
+        </div>
       ) : entries.length === 0 ? (
         <div className="view-empty">
           <div className="empty-glyph">✓</div>
