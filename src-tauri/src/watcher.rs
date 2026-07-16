@@ -13,8 +13,27 @@ use tauri::{AppHandle, Emitter};
 
 const DEBOUNCE_MS: u64 = 400;
 
-/// Directory segments we never surface (noise / build artifacts).
-const IGNORED: &[&str] = &[".git", "node_modules", "target", "dist", ".DS_Store"];
+/// Directory segments we never surface (noise / build artifacts / OS churn).
+const IGNORED: &[&str] = &[
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".next",
+    ".DS_Store",
+    // high-churn OS / cache dirs (matter when the workspace is a home dir)
+    "Library",
+    "Applications",
+    "Caches",
+    ".cache",
+    ".Trash",
+    ".Trashes",
+    ".cargo",
+    ".rustup",
+    ".npm",
+    ".vscode",
+];
 
 /// Start watching `root` recursively. Returns the watcher handle to keep alive.
 pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String> {

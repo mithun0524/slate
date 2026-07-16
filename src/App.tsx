@@ -71,6 +71,9 @@ function App() {
   lastSpecRef.current = lastSpec;
   const activeTermRef = useRef(activeTerm);
   activeTermRef.current = activeTerm;
+  // Timestamp of the last manual view selection — auto-switch is held off
+  // briefly afterwards so a click doesn't get instantly overridden.
+  const manualAt = useRef(0);
   const termSeq = useRef(1);
   const termCwds = useRef<Record<string, string>>({});
 
@@ -113,6 +116,7 @@ function App() {
 
   const apply = useCallback((next: ViewIntent, src: Source) => {
     setReplay(null); // any navigation / new work exits replay
+    if (src === "manual") manualAt.current = Date.now();
     setIntent(next);
     setSource(src);
     setSeq((s) => s + 1);
@@ -145,7 +149,8 @@ function App() {
       const el = document.activeElement as HTMLElement | null;
       const typing =
         !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
-      if (!pinnedRef.current && !typing) apply(ev.intent, ev.source);
+      const held = Date.now() - manualAt.current < 4000; // recent manual pick
+      if (!pinnedRef.current && !typing && !held) apply(ev.intent, ev.source);
     });
     return () => {
       p.then((off) => off());
