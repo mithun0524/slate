@@ -1026,6 +1026,10 @@ body.dragging-split {
   padding: 3px 12px;
   cursor: pointer;
   white-space: nowrap;
+  /* grow to the longest name; scroll horizontally to reveal it, hover still
+     fills the visible width */
+  width: max-content;
+  min-width: 100%;
 }
 .spec-row.dir {
   color: var(--fg-mut);
@@ -1046,12 +1050,10 @@ body.dragging-split {
   opacity: 0.7;
 }
 .spec-folder {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .spec-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--fg);
 }
 .spec-collapse,
