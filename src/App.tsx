@@ -140,7 +140,12 @@ function App() {
           setHistory((h) => h.map((e) => (e.id === id ? { ...e, patch: p, head } : e)));
         });
       }
-      if (!pinnedRef.current) apply(ev.intent, ev.source);
+      // Don't yank the view out from under the user while they're typing
+      // (commit box, search, etc.) — still logged above, just don't switch.
+      const el = document.activeElement as HTMLElement | null;
+      const typing =
+        !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (!pinnedRef.current && !typing) apply(ev.intent, ev.source);
     });
     return () => {
       p.then((off) => off());
