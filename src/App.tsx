@@ -160,7 +160,7 @@ function App() {
       const el = document.activeElement as HTMLElement | null;
       const typing =
         !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
-      const held = Date.now() - manualAt.current < 4000; // recent manual pick
+      const held = Date.now() - manualAt.current < 8000; // recent Panel B activity
       if (!pinnedRef.current && !typing && !held) apply(ev.intent, ev.source);
     });
     return () => {
@@ -334,7 +334,12 @@ function App() {
             />
           }
           right={
-            <div className="panel-b">
+            <div
+              className="panel-b"
+              onPointerDownCapture={() => (manualAt.current = Date.now())}
+              onWheelCapture={() => (manualAt.current = Date.now())}
+              onKeyDownCapture={() => (manualAt.current = Date.now())}
+            >
               <ViewTabs active={active} onSelect={navigate} />
               <div className="panel-body">
                 {replay ? (
