@@ -114,6 +114,17 @@ function App() {
 
   useEffect(() => applyTheme(theme), [theme]);
 
+  // Safety: never let the divider-drag class stick (would break input focus).
+  useEffect(() => {
+    const clear = () => document.body.classList.remove("dragging-split");
+    window.addEventListener("pointerup", clear);
+    window.addEventListener("blur", clear);
+    return () => {
+      window.removeEventListener("pointerup", clear);
+      window.removeEventListener("blur", clear);
+    };
+  }, []);
+
   const apply = useCallback((next: ViewIntent, src: Source) => {
     setReplay(null); // any navigation / new work exits replay
     if (src === "manual") manualAt.current = Date.now();

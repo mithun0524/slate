@@ -312,12 +312,14 @@ body {
 .split.dragging {
   cursor: col-resize;
 }
-/* While dragging a divider, kill selection everywhere (WKWebView needs the
-   -webkit- prefix and !important to override element defaults). */
+/* While dragging a divider, kill selection everywhere EXCEPT form fields
+   (WebKit's -webkit-user-select:none on an input blocks focus/typing). */
 body.dragging-split,
-body.dragging-split * {
+body.dragging-split *:not(input):not(textarea) {
   -webkit-user-select: none !important;
   user-select: none !important;
+}
+body.dragging-split {
   cursor: col-resize !important;
 }
 .split-pane {
