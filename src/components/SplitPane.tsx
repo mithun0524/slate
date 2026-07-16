@@ -42,6 +42,9 @@ export function SplitPane({
   }, []);
 
   const endDrag = useCallback(() => {
+    // Only act on the end of an ACTUAL drag — this handler is on the container
+    // and bubbles up from every click inside the pane (e.g. focusing an input).
+    if (!dragging.current) return;
     dragging.current = false;
     setActive(false);
     document.body.classList.remove("dragging-split");
