@@ -227,15 +227,21 @@ export const DiffView: React.FC<{ local: number; bloom: number }> = ({ local, bl
             <span>
               {parts[0]}
               {r.hot ? (
+                /* the token is never invisible — only the highlight arrives, wiping
+                   across it. Fading the span itself left the line reading "return"
+                   with its tail missing until the bloom landed. */
                 <span
                   style={{
-                    background: r.k === "add" ? c.wlAdd : c.wlDel,
                     color: "#fff",
                     padding: "1px 2px",
                     display: "inline-block",
-                    scale: `${at(local, [bloom, bloom + 14], [0.7, 1])} 1`,
-                    transformOrigin: "left center",
-                    opacity: at(local, [bloom, bloom + 10], [0, 1]),
+                    background: `linear-gradient(90deg, ${
+                      r.k === "add" ? c.wlAdd : c.wlDel
+                    } ${at(local, [bloom, bloom + 16], [0, 100])}%, transparent ${at(
+                      local,
+                      [bloom, bloom + 16],
+                      [0, 100],
+                    )}%)`,
                   }}
                 >
                   {r.hot}

@@ -23,7 +23,16 @@ import { type Line } from "./Terminal";
 const BOX = { left: 0, top: 0, width: 1920, height: 1080 };
 const STRIP = 118;
 
+/** The loop joins a session already under way — negative frames are history, so
+ *  the shell is never an empty rectangle, not even on frame 0. */
 const LINES: Line[] = [
+  { f: -60, verb: "Read", rest: "src/server/router.ts" },
+  { f: -52, verb: "Read", rest: "src/server/index.ts" },
+  { f: -44, verb: "Grep", rest: '"rate" · 3 matches' },
+  { f: -36, verb: "Read", rest: "package.json" },
+  { f: -28, verb: "Write", rest: "src/lib/limiter.ts" },
+  { f: -20, verb: "Write", rest: "src/lib/window.ts" },
+  { f: -12, verb: "Edit", rest: "src/config/defaults.ts" },
   { f: 14, verb: "Write", rest: "docs/specs/rate-limiting.md" },
   { f: 74, verb: "Read", rest: "src/lib/limiter.ts" },
   { f: 132, verb: "Edit", rest: "src/server/middleware/limit.ts" },
@@ -40,12 +49,12 @@ export const HeroLoop: React.FC = () => {
   const frame = useCurrentFrame();
 
   /** open outward from the line, then close back into it */
-  const open = at(frame, [6, 46], [50, 0], CAM) + at(frame, [CLOSE, CLOSE + 34], [0, 50], IN);
+  const open = at(frame, [2, 34], [50, 0], CAM) + at(frame, [CLOSE + 12, CLOSE + 40], [0, 50], IN);
   /** the line is bright at the loop point and dim while the app is open, so
    *  frame 0 and frame 449 are the same picture and the stitch is invisible */
   const alone = Math.min(
     1,
-    1 - at(frame, [6, 40], [0, 1]) + at(frame, [CLOSE + 14, CLOSE + 44], [0, 1]),
+    1 - at(frame, [2, 30], [0, 1]) + at(frame, [CLOSE + 22, CLOSE + 46], [0, 1]),
   );
 
   return (
@@ -75,7 +84,9 @@ export const HeroLoop: React.FC = () => {
         frame={frame}
         lines={LINES}
         box={BOX}
-        padBottom={STRIP + 18}
+        zoom={1.2}
+        termSize={26}
+        padBottom={40}
         clip={`inset(0 ${open}% 0 ${open}%)`}
         right={
           <>
@@ -107,74 +118,49 @@ export const HeroLoop: React.FC = () => {
         );
       })}
 
+      {/* one scrim, in the pane's own dead space — the log stays clean */}
       <div
         style={{
           position: "absolute",
-          left: 0,
+          left: 962,
           right: 0,
           bottom: 0,
-          height: STRIP + 90,
+          height: STRIP + 120,
           background:
-            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
-          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
+            "linear-gradient(to top, rgba(24,24,25,.96) 0%, rgba(24,24,25,.72) 52%, transparent 100%)",
+          opacity: at(frame, [24, 48], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
         }}
       />
 
-      <Cap left={64} bottom={46}>
+      <Cap left={1000} bottom={70} width={860}>
         <Words
           frame={frame}
           text="It writes a spec → the spec is open."
-          start={40}
-          hold={82}
-          size={50}
+          start={34}
+          hold={86}
+          size={48}
           color={c.dim}
           hot={{ "→": c.dim2, spec: c.fg }}
         />
       </Cap>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: STRIP + 90,
-          background:
-            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
-          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
-        }}
-      />
-
-      <Cap left={64} bottom={46}>
+      <Cap left={1000} bottom={70} width={860}>
         <Words
           frame={frame}
           text="It edits code → the diff is open."
           start={158}
           hold={78}
-          size={50}
+          size={48}
           color={c.dim}
           hot={{ "→": c.dim2, diff: c.fg }}
         />
       </Cap>
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: STRIP + 90,
-          background:
-            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
-          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
-        }}
-      />
-
-      <Cap left={64} bottom={46}>
+      <Cap left={1000} bottom={70} width={860}>
         <Words
           frame={frame}
           text="It moves files → the tree is open."
           start={290}
-          hold={72}
-          size={50}
+          hold={74}
+          size={48}
           color={c.dim}
           hot={{ "→": c.dim2, tree: c.fg }}
         />

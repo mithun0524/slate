@@ -83,6 +83,14 @@ Frame 449 is the same picture as frame 0: the seam sits bright and alone at the
 loop point, the app opens outward from it and drains back into it, and 450 divides
 the 30-frame caret blink so the stitch carries no visible tick.
 
+It runs full-bleed (the film frames the app as an object; a hero already sits in
+the site's own card, and a card in a card leaves the product tiny). Two things
+follow from filling the frame: the shell joins a session **already under way** —
+`LINES` starts at negative frames, so no viewer ever sees an empty pane — and the
+causal line rides a scrim in the right pane's own dead space rather than over the
+log. Pane content is scaled (`zoom`) because a full-bleed pane is taller than the
+film's.
+
 ## Layout
 
 `theme.ts` tokens + act map · `Kinetic.tsx` type system (`Words`, `Cap`,

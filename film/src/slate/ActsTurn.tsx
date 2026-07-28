@@ -114,7 +114,20 @@ export const AppCard: React.FC<{
   box?: { left: number; top: number; width: number; height: number };
   radius?: number;
   padBottom?: number;
-}> = ({ frame, right, clip, lines = LINES, box = CARD, radius, padBottom }) => (
+  /** the hero runs full-bleed, so its panes are taller — scale the view up to fill */
+  zoom?: number;
+  termSize?: number;
+}> = ({
+  frame,
+  right,
+  clip,
+  lines = LINES,
+  box = CARD,
+  radius,
+  padBottom,
+  zoom = 1,
+  termSize,
+}) => (
   <div
     style={{
       position: "absolute",
@@ -150,14 +163,25 @@ export const AppCard: React.FC<{
         zsh
         <span style={{ color: c.dim3, textTransform: "none", letterSpacing: 0 }}>~/acme-api</span>
       </div>
-      <Terminal frame={frame} lines={lines} padBottom={padBottom} />
+      <Terminal frame={frame} lines={lines} padBottom={padBottom} size={termSize} />
     </div>
 
     {/* the seam, now load-bearing */}
     <div style={{ width: 1, background: c.line }} />
 
     <div style={{ flex: 1, position: "relative", background: c.bg1, overflow: "hidden" }}>
-      {right}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: `${100 / zoom}%`,
+          height: `${100 / zoom}%`,
+          scale: String(zoom),
+          transformOrigin: "top left",
+        }}
+      >
+        {right}
+      </div>
     </div>
   </div>
 );
