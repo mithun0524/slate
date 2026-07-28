@@ -20,6 +20,24 @@ export default function HeroVideo() {
     }
   }, []);
 
+  /* The control strip has to report what the element is actually doing. It used
+     to track our own intent, so a browser that refused to autoplay showed a
+     "Pause" button over a video that had never started — and because the loop
+     opens on a near-black frame, that read as a broken player. */
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onPlay = () => setPlaying(true);
+    const onPause = () => setPlaying(false);
+    el.addEventListener("play", onPlay);
+    el.addEventListener("pause", onPause);
+    el.play().catch(() => setPlaying(false));
+    return () => {
+      el.removeEventListener("play", onPlay);
+      el.removeEventListener("pause", onPause);
+    };
+  }, []);
+
   /* don't burn frames on a video nobody is looking at */
   useEffect(() => {
     const el = ref.current;

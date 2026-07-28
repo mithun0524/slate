@@ -29,3 +29,7 @@ dist-ssr
 # installed agent skills (vendored, re-installable via npx skills add)
 .agents/
 .claude/
+
+# vercel
+.vercel
+.env.local

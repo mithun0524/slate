@@ -1,0 +1,25 @@
+# The Vercel project's root directory is web/, but the CLI still uploads the
+# whole repo as build context — which is 29k files once every node_modules is
+# counted, over Vercel's 15k limit. Nothing outside web/ is ever built.
+#
+# Only matters for manual `vercel deploy` from the repo root; the Git
+# integration clones the repo and ignores this file.
+
+node_modules
+.next
+out
+dist
+target
+
+film
+video
+src
+src-tauri
+docs
+graphify-out
+public
+index.html
+vite.config.ts
+vitest.config.ts
+tsconfig*.json
+package*.json
