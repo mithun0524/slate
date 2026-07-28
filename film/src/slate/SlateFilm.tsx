@@ -20,8 +20,10 @@ export const SlateFilm: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: c.void }}>
-      {/* synthesised in scripts/score.py — cue frames match the act map */}
-      <Audio src={staticFile("score.wav")} volume={0.9} />
+      {/* scripts/score.py (bed) + scripts/sfx.sh (real effects) + scripts/vo.mjs
+          (ElevenLabs voice), assembled by scripts/mix.py — cue frames match the
+          act map above */}
+      <Audio src={staticFile("mix.wav")} volume={1} />
 
       <Sequence name="I · handoff" from={ACT.handoff.from} durationInFrames={ACT.handoff.dur}>
         <Handoff />

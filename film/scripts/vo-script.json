@@ -1,0 +1,69 @@
+{
+  "note": "Voiceover for SlateFilm. `f` is the frame the line starts on (30fps). Written to sit BESIDE the on-screen type, not to read it aloud — the captions state facts, the voice makes the argument. Low, calm, male; close-mic; unhurried.",
+  "voice": "onwK4e9ZLuTAKqWW03F9",
+  "voiceName": "Daniel — low, calm, British male",
+  "model": "eleven_multilingual_v2",
+  "settings": {
+    "stability": 0.55,
+    "similarity_boost": 0.75,
+    "style": 0.15,
+    "speed": 0.94
+  },
+  "lines": [
+    {
+      "id": "01",
+      "f": 158,
+      "text": "You give it one sentence."
+    },
+    {
+      "id": "02",
+      "f": 236,
+      "text": "It works for a minute. You read none of it."
+    },
+    {
+      "id": "03",
+      "f": 396,
+      "text": "Somewhere in there, it touched auth."
+    },
+    {
+      "id": "04",
+      "f": 556,
+      "text": "So you go looking. Terminal, editor, diff, the old spec."
+    },
+    {
+      "id": "05",
+      "f": 716,
+      "text": "And the change that broke it has already scrolled away."
+    },
+    {
+      "id": "06",
+      "f": 900,
+      "text": "Slate puts the answer where you are already looking."
+    },
+    {
+      "id": "07",
+      "f": 1010,
+      "text": "Every write lands on the left. The right half is already the thing it wrote."
+    },
+    {
+      "id": "09",
+      "f": 1340,
+      "text": "No model, no prompt. Sixty lines of Rust decide."
+    },
+    {
+      "id": "10",
+      "f": 1486,
+      "text": "Nothing to look for. It is already there."
+    },
+    {
+      "id": "11",
+      "f": 1590,
+      "text": "Twelve megabytes. No account. No telemetry."
+    },
+    {
+      "id": "12",
+      "f": 1712,
+      "text": "Slate. The terminal that shows its work."
+    }
+  ]
+}

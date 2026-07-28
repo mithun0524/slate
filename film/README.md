@@ -77,18 +77,41 @@ the drain is the payoff, so it has to appear twice.
   where the app itself uses them (added, deleted, hunk).
 - **No `Math.random()`** — `rnd.ts` is deterministic, so renders are reproducible.
 
-## The score
+## The sound
 
-`scripts/score.py` synthesises `public/score.wav` from nothing — sines, filtered
-noise, a deterministic LCG. No samples, no licences, ~4s to render, and every cue
-is placed off the same frame numbers as the picture, so re-timing an act means
-moving one number in each place.
+Four sources, assembled by one script:
 
-It is a tension curve, not a soundtrack: room tone and a low drone that tighten
-through the four cost acts (a tick per typed character, a tick per escaped write,
-a tick per window switch, accelerating with the picture), a **hard cut to silence
-at the turn**, one bell as the seam draws, then a calm pad that resolves into the
-only consonant chord in the film on the end card. Peak −3.2 dBFS, mean −19.4.
+```
+python3 scripts/score.py    →  public/bed.wav     drones, sub drops, risers, pads (synth)
+sh      scripts/sfx.sh      →  public/sfx/*.wav   real recordings: switch, click, whoosh, page-turn, bell
+node    scripts/vo.mjs      →  public/vo/NN.mp3   ElevenLabs, 11 lines (needs .env.local)
+python3 scripts/mix.py      →  public/mix.wav     ← what the film plays
+```
+
+**Nothing mechanical is synthesised.** The first pass synthesised its clicks and
+that is exactly what made it sound cheap — a synthesised click is the most obvious
+tell in a mix. Every tick, switch, page turn and the bell at the turn is now a real
+recording, and most are **trimmed to their first ~50ms**: a 0.4s recorded click
+played whole reads as *a sound effect*, while its transient reads as the interface
+itself. What stays synthesised is what synthesises well — low sines, filtered noise,
+slow pads — and it lives at −7.5 dBFS to leave room above.
+
+**The voice argues; the type states.** The captions carry the facts, so the
+voiceover never reads them aloud (the one exception is the payoff line, where
+hearing and seeing it together is the point). Low, calm, British male, 0.94×
+speed. The bed ducks 9 dB under it with a 140 ms attack and 340 ms release;
+effects duck only 3.5 dB so a tick under a line still cuts through.
+
+**Talk is 38s of 60 — 64%.** The first cut was 71% and felt like a webinar; one
+line went because it said what the captions and the line before it already said.
+`scripts/mix.py` re-runs in ~10s, so check every retime by ear.
+
+Timing is verified, not eyeballed: no line may overlap the next, run past frame
+1800, or intrude on the twelve frames of silence at the turn — that silence is
+the loudest thing in the film.
+
+To change a line: edit `scripts/vo-script.json`, delete that line's mp3, re-run
+`vo.mjs` (only the missing line is billed) and `mix.py`.
 
 ## The vertical cut
 
