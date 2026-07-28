@@ -109,7 +109,8 @@ export const AppCard: React.FC<{
   frame: number;
   right: React.ReactNode;
   clip?: string;
-}> = ({ frame, right, clip }) => (
+  lines?: Line[];
+}> = ({ frame, right, clip, lines = LINES }) => (
   <div
     style={{
       position: "absolute",
@@ -143,7 +144,7 @@ export const AppCard: React.FC<{
         zsh
         <span style={{ color: c.dim3, textTransform: "none", letterSpacing: 0 }}>~/acme-api</span>
       </div>
-      <Terminal frame={frame} lines={LINES} />
+      <Terminal frame={frame} lines={lines} />
     </div>
 
     {/* the seam, now load-bearing */}

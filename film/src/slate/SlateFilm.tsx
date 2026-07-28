@@ -1,5 +1,6 @@
 import React from "react";
-import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { Audio } from "@remotion/media";
 import { ACT, c } from "./theme";
 import { Grain, Seam, Vignette } from "./Chrome";
 import { BlackBox, Buried, Handoff, TabTax, Void } from "./ActsCost";
@@ -19,6 +20,9 @@ export const SlateFilm: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: c.void }}>
+      {/* synthesised in scripts/score.py — cue frames match the act map */}
+      <Audio src={staticFile("score.wav")} volume={0.9} />
+
       <Sequence name="I · handoff" from={ACT.handoff.from} durationInFrames={ACT.handoff.dur}>
         <Handoff />
       </Sequence>

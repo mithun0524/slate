@@ -1,12 +1,24 @@
 # Slate — "Trust needs a window"
 
-A 60s motion-graphics ad for Slate. Not a product demo: the first half is the
+A motion-graphics ad for Slate. Not a product demo: the first half is the
 psychology of a blind agent handoff, the second half removes it.
 
+| Composition | Out | For |
+|---|---|---|
+| `SlateFilm` | 1920×1080 · 60s · **scored** | the film — launch post, YouTube, sales |
+| `HeroLoop` | 1920×1080 · 15s · silent, seamless | above the fold, autoplay muted |
+| `SlateVertical` | 1080×1920 · 32s · silent | Reels / Shorts / TikTok |
+
 ```
-npx remotion studio              # preview
-npx remotion render SlateFilm    # 1920×1080 · 30fps · 1800 frames
+npx remotion studio                              # preview all three
+python3 scripts/score.py                         # regenerate public/score.wav
+npx remotion render SlateFilm                    # the film
+npx remotion render HeroLoop                     # hero loop
+npx remotion render SlateVertical                # 9:16
 ```
+
+The two silent cuts ship with no audio track at all (`ffmpeg -an` after render);
+feeds and hero videos autoplay muted, and an empty track is just bytes.
 
 ## Why it is built this way
 
@@ -44,11 +56,40 @@ the drain is the payoff, so it has to appear twice.
   where the app itself uses them (added, deleted, hunk).
 - **No `Math.random()`** — `rnd.ts` is deterministic, so renders are reproducible.
 
-Silent by design (autoplay-muted hero). If it needs sound, the cut points are the
-act boundaries above.
+## The score
+
+`scripts/score.py` synthesises `public/score.wav` from nothing — sines, filtered
+noise, a deterministic LCG. No samples, no licences, ~4s to render, and every cue
+is placed off the same frame numbers as the picture, so re-timing an act means
+moving one number in each place.
+
+It is a tension curve, not a soundtrack: room tone and a low drone that tighten
+through the four cost acts (a tick per typed character, a tick per escaped write,
+a tick per window switch, accelerating with the picture), a **hard cut to silence
+at the turn**, one bell as the seam draws, then a calm pad that resolves into the
+only consonant chord in the film on the end card. Peak −3.2 dBFS, mean −19.4.
+
+## The vertical cut
+
+Slate's seam is vertical, and a vertical seam in a vertical frame divides nothing
+you can read. So the 9:16 cut rotates the gesture 90° — shell above, the view it
+caused below, seam drawing left→right. Same argument, one fewer act (the tab tax
+and the buffer wall are cut; a phone viewer gives you eleven seconds of setup, not
+twenty-four). It is a re-stage, not a letterbox.
+
+## The hero loop
+
+Frame 449 is the same picture as frame 0: the seam sits bright and alone at the
+loop point, the app opens outward from it and drains back into it, and 450 divides
+the 30-frame caret blink so the stitch carries no visible tick.
 
 ## Layout
 
-`theme.ts` tokens + act map · `Kinetic.tsx` type system · `Chrome.tsx` grain,
-vignette, seam, meter · `ActsCost.tsx` I–V · `ActsTurn.tsx` VI–IX + `AppCard` ·
-`ActsClose.tsx` X–XI · `Panes.tsx` spec/diff/tree · `Terminal.tsx` the shell.
+`theme.ts` tokens + act map · `Kinetic.tsx` type system (`Words`, `Cap`,
+`Counter`) · `Chrome.tsx` grain, vignette, seam, meter · `ActsCost.tsx` I–V ·
+`ActsTurn.tsx` VI–IX + `AppCard` · `ActsClose.tsx` X–XI · `Panes.tsx`
+spec/diff/tree · `Terminal.tsx` the shell · `HeroLoop.tsx` and `VerticalFilm.tsx`
+re-use all of the above · `scripts/score.py` the audio.
+
+`public/score.wav` is generated, not committed — `python3 scripts/score.py`
+rebuilds it byte-for-byte.
