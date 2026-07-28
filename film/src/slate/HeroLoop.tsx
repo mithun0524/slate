@@ -1,30 +1,43 @@
 import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { at, c, CAM, IN, inOut } from "./theme";
+import { at, c, CAM, IN, inOut, mono, sans } from "./theme";
 import { Cap, Words } from "./Kinetic";
-import { Grain, Vignette } from "./Chrome";
+import { Grain, Mark, Vignette } from "./Chrome";
 import { AppCard } from "./ActsTurn";
 import { DiffView, SpecView, TreeView } from "./Panes";
 import { type Line } from "./Terminal";
 
 /**
- * 15s silent hero loop for above the fold — acts VI–VII only, no argument, no
- * problem statement, just the gesture. It has to survive being watched twenty
- * times, so it opens from the seam and drains back into it: frame 449 is
- * pixel-identical to frame 0, and 450 divides the 30-frame caret blink, so the
- * stitch carries no visible tick.
+ * 22s silent hero loop — above the fold, autoplay muted.
  *
- * Runs **full-bleed**, unlike the film, which frames the app as an object on a
- * dark field. A hero already sits inside the site's own card, and a card inside
- * a card leaves the product tiny — so here the app is the frame, and the causal
- * line rides a scrim strip along the bottom.
+ * Three movements, all hung on the seam. It **opens on the lockup**: the mark
+ * draws to the left of the line and the wordmark rises to the right, so the
+ * logo's own divider and the product's centre seam are the same object. The line
+ * then opens into the app, which answers three impulses. It **closes on the CTA**,
+ * and everything drains back into the line — frame 659 is the same picture as
+ * frame 0, and 660 divides the 30-frame caret blink, so the stitch carries no
+ * visible tick.
+ *
+ * Runs full-bleed, unlike the film, which frames the app as an object on a dark
+ * field: a hero already sits inside the site's own card, and a card inside a card
+ * leaves the product tiny.
  */
+
+export const HERO_TOTAL = 660;
 
 const BOX = { left: 0, top: 0, width: 1920, height: 1080 };
 const STRIP = 118;
 
+const OPEN = 56; //  the line opens into the app
+const SPEC = 82;
+const DIFF = 210;
+const TREE = 338;
+const CLOSE = 452; //  the app folds back into the line
+const OUTRO = 496;
+const DRAIN = 604; //  the CTA leaves; the line is alone again
+
 /** The loop joins a session already under way — negative frames are history, so
- *  the shell is never an empty rectangle, not even on frame 0. */
+ *  the shell is never an empty rectangle, not even on the frame it loops to. */
 const LINES: Line[] = [
   { f: -60, verb: "Read", rest: "src/server/router.ts" },
   { f: -52, verb: "Read", rest: "src/server/index.ts" },
@@ -33,29 +46,112 @@ const LINES: Line[] = [
   { f: -28, verb: "Write", rest: "src/lib/limiter.ts" },
   { f: -20, verb: "Write", rest: "src/lib/window.ts" },
   { f: -12, verb: "Edit", rest: "src/config/defaults.ts" },
-  { f: 14, verb: "Write", rest: "docs/specs/rate-limiting.md" },
-  { f: 74, verb: "Read", rest: "src/lib/limiter.ts" },
-  { f: 132, verb: "Edit", rest: "src/server/middleware/limit.ts" },
-  { f: 210, verb: "Bash", rest: "npm test · 42 passed", ok: true },
-  { f: 258, verb: "Move", rest: "lib/limiter.ts → server/limiter/" },
+  { f: SPEC - 14, verb: "Write", rest: "docs/specs/rate-limiting.md" },
+  { f: SPEC + 46, verb: "Read", rest: "src/lib/limiter.ts" },
+  { f: DIFF - 14, verb: "Edit", rest: "src/server/middleware/limit.ts" },
+  { f: DIFF + 58, verb: "Bash", rest: "npm test · 42 passed", ok: true },
+  { f: TREE - 14, verb: "Move", rest: "lib/limiter.ts → server/limiter/" },
 ];
 
-const SPEC = 26;
-const DIFF = 150;
-const TREE = 282;
-const CLOSE = 400;
+/* ── intro: mark and wordmark, split by the seam itself ────────────────── */
+
+const Lockup: React.FC<{ frame: number }> = ({ frame }) => {
+  const gone = at(frame, [OPEN - 14, OPEN + 8], [0, 1], IN);
+  return (
+    <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 92,
+          opacity: 1 - gone,
+          translate: `0px ${gone * -26}px`,
+        }}
+      >
+        <div style={{ opacity: at(frame, [8, 22], [0, 1]) }}>
+          <Mark frame={frame} size={104} box={[10, 40]} seam={[30, 50]} chev={[42, 58]} />
+        </div>
+        <div
+          style={{
+            fontFamily: sans,
+            fontSize: 108,
+            fontWeight: 500,
+            letterSpacing: "-0.045em",
+            color: c.fg,
+            overflow: "hidden",
+            paddingBottom: 12,
+          }}
+        >
+          <span
+            style={{ display: "block", translate: `0px ${at(frame, [26, 50], [140, 0], CAM)}px` }}
+          >
+            Slate
+          </span>
+        </div>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+/* ── outro: what to type, once the argument has been made ──────────────── */
+
+const Outro: React.FC<{ frame: number }> = ({ frame }) => {
+  const local = frame - OUTRO;
+  const gone = at(frame, [DRAIN, DRAIN + 26], [0, 1], IN);
+  return (
+    <AbsoluteFill
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 32,
+        opacity: 1 - gone,
+        translate: `0px ${gone * -24}px`,
+      }}
+    >
+      <Words
+        frame={local}
+        text="The terminal that shows its work."
+        start={10}
+        hold={300}
+        size={74}
+      />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          padding: "16px 28px",
+          border: `1px solid ${c.line}`,
+          background: c.bg1,
+          fontFamily: mono,
+          fontSize: 30,
+          color: c.fg2,
+          opacity: at(local, [34, 54], [0, 1]),
+          translate: `0px ${at(local, [34, 56], [14, 0])}px`,
+        }}
+      >
+        <span style={{ color: c.add }}>$</span>
+        brew install --cask slate
+      </div>
+    </AbsoluteFill>
+  );
+};
 
 export const HeroLoop: React.FC = () => {
   const frame = useCurrentFrame();
 
-  /** open outward from the line, then close back into it */
-  const open = at(frame, [2, 34], [50, 0], CAM) + at(frame, [CLOSE + 12, CLOSE + 40], [0, 50], IN);
-  /** the line is bright at the loop point and dim while the app is open, so
-   *  frame 0 and frame 449 are the same picture and the stitch is invisible */
-  const alone = Math.min(
-    1,
-    1 - at(frame, [2, 30], [0, 1]) + at(frame, [CLOSE + 22, CLOSE + 46], [0, 1]),
-  );
+  /** the app unfolds from the line and folds back into it */
+  const open =
+    at(frame, [OPEN, OPEN + 34], [50, 0], CAM) + at(frame, [CLOSE, CLOSE + 30], [0, 50], IN);
+
+  /** the line is bright whenever it is alone — which is exactly the loop point.
+   *  It dims under the CTA, because a lit hairline through a line of type reads
+   *  as a strike-through, and brightens again before the loop stitch. */
+  const alone =
+    Math.min(
+      1,
+      1 - at(frame, [OPEN, OPEN + 28], [0, 1]) + at(frame, [CLOSE + 16, CLOSE + 40], [0, 1]),
+    ) * (1 - inOut(frame, [OUTRO - 12, OUTRO + 10], [DRAIN, DRAIN + 22]) * 0.82);
 
   return (
     <AbsoluteFill style={{ background: c.void }}>
@@ -80,6 +176,8 @@ export const HeroLoop: React.FC = () => {
         />
       </AbsoluteFill>
 
+      {frame < OPEN + 10 ? <Lockup frame={frame} /> : null}
+
       <AppCard
         frame={frame}
         lines={LINES}
@@ -97,7 +195,7 @@ export const HeroLoop: React.FC = () => {
         }
       />
 
-      {/* the terminal is inside AppCard; this is only the impulse crossing the seam */}
+      {/* every beat is one impulse crossing the seam */}
       {[SPEC, DIFF, TREE].map((beat) => {
         const local = frame - (beat - 10);
         return (
@@ -128,7 +226,9 @@ export const HeroLoop: React.FC = () => {
           height: STRIP + 120,
           background:
             "linear-gradient(to top, rgba(24,24,25,.96) 0%, rgba(24,24,25,.72) 52%, transparent 100%)",
-          opacity: at(frame, [24, 48], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
+          opacity:
+            at(frame, [OPEN + 20, OPEN + 44], [0, 1]) -
+            at(frame, [CLOSE - 12, CLOSE + 14], [0, 1], IN),
         }}
       />
 
@@ -136,8 +236,8 @@ export const HeroLoop: React.FC = () => {
         <Words
           frame={frame}
           text="It writes a spec → the spec is open."
-          start={34}
-          hold={86}
+          start={SPEC + 12}
+          hold={92}
           size={48}
           color={c.dim}
           hot={{ "→": c.dim2, spec: c.fg }}
@@ -147,8 +247,8 @@ export const HeroLoop: React.FC = () => {
         <Words
           frame={frame}
           text="It edits code → the diff is open."
-          start={158}
-          hold={78}
+          start={DIFF + 12}
+          hold={92}
           size={48}
           color={c.dim}
           hot={{ "→": c.dim2, diff: c.fg }}
@@ -158,13 +258,15 @@ export const HeroLoop: React.FC = () => {
         <Words
           frame={frame}
           text="It moves files → the tree is open."
-          start={290}
-          hold={74}
+          start={TREE + 12}
+          hold={84}
           size={48}
           color={c.dim}
           hot={{ "→": c.dim2, tree: c.fg }}
         />
       </Cap>
+
+      {frame >= OUTRO ? <Outro frame={frame} /> : null}
 
       <Vignette />
       <Grain frame={frame} />

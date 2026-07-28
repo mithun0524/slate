@@ -136,3 +136,46 @@ export const Scrim: React.FC<{ opacity?: number }> = ({ opacity = 1 }) => (
     }}
   />
 );
+
+/**
+ * The mark, drawn in the order the argument runs: the window, then the seam
+ * that splits it, then the prompt on the left. Shared by the film's end card
+ * and the hero loop's intro, so the two can never drift apart.
+ */
+export const Mark: React.FC<{
+  frame: number;
+  size?: number;
+  box?: readonly [number, number];
+  seam?: readonly [number, number];
+  chev?: readonly [number, number];
+}> = ({ frame, size = 104, box = [6, 40], seam = [30, 52], chev = [44, 64] }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect
+      x={2}
+      y={4}
+      width={20}
+      height={16}
+      rx={3}
+      stroke={c.fg}
+      strokeWidth={1.7}
+      strokeDasharray={72}
+      strokeDashoffset={72 - 72 * at(frame, box, [0, 1], CAM)}
+    />
+    <path
+      d="M13.5 4v16"
+      stroke={c.fg}
+      strokeWidth={1.7}
+      strokeDasharray={16}
+      strokeDashoffset={16 - 16 * at(frame, seam, [0, 1], CAM)}
+    />
+    <path
+      d="m5.4 9.6 2.2 2.2-2.2 2.2"
+      stroke={c.add}
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeDasharray={7}
+      strokeDashoffset={7 - 7 * at(frame, chev, [0, 1])}
+    />
+  </svg>
+);

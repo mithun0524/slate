@@ -3,22 +3,43 @@
 A motion-graphics ad for Slate. Not a product demo: the first half is the
 psychology of a blind agent handoff, the second half removes it.
 
-| Composition | Out | For |
-|---|---|---|
-| `SlateFilm` | 1920×1080 · 60s · **scored** | the film — launch post, YouTube, sales |
-| `HeroLoop` | 1920×1080 · 15s · silent, seamless | above the fold, autoplay muted |
-| `SlateVertical` | 1080×1920 · 32s · silent | Reels / Shorts / TikTok |
+| Composition | Master | Deliverable | For |
+|---|---|---|---|
+| `SlateFilm` | 3840×2160 · 60s · **scored** | 1080p, crf 16 | launch post, YouTube, sales |
+| `HeroLoop` | 3840×2160 · 22s · silent, seamless | 1080p, crf 17 | above the fold, autoplay muted |
+| `SlateVertical` | 2160×3840 · 32s · silent | 1080×1920, crf 17 | Reels / Shorts / TikTok |
 
 ```
-npx remotion studio                              # preview all three
-python3 scripts/score.py                         # regenerate public/score.wav
-npx remotion render SlateFilm                    # the film
-npx remotion render HeroLoop                     # hero loop
-npx remotion render SlateVertical                # 9:16
+npx remotion studio                                  # preview all three
+python3 scripts/score.py                             # regenerate public/score.wav
+npx remotion render SlateFilm  out/film-4k.mp4     --scale=2 --crf=14
+npx remotion render HeroLoop   out/hero-4k.mp4     --scale=2 --crf=13
+npx remotion render SlateVertical out/vert-4k.mp4  --scale=2 --crf=14
 ```
 
-The two silent cuts ship with no audio track at all (`ffmpeg -an` after render);
-feeds and hero videos autoplay muted, and an empty track is just bytes.
+**Always render at `--scale=2` and downscale.** The compositions are 1920×1080,
+so `--scale=2` renders every element at 2× — this is a DOM render, not an upscale,
+so hairlines, mono text and the 1px seam are resolved at 4K and then supersampled
+down with `flags=lanczos`. A direct 1080p render of the same frame is measurably
+softer on exactly the things this film is made of.
+
+The two silent cuts ship with no audio track at all (`-an`); feeds and hero videos
+autoplay muted, and an empty track is just bytes.
+
+## The web encode ladder
+
+| File | Codec | Settings | Size |
+|---|---|---|---|
+| `slate-hero.webm` | VP9 | `-crf 20 -b:v 0 -cpu-used 1 -auto-alt-ref 1 -lag-in-frames 25` | 696 KB |
+| `slate-hero.mp4` | H.264 | `-crf 19 -preset slow -profile:v high +faststart` | 683 KB |
+| `slate-film.mp4` | H.264 + AAC 160k | `-crf 20 -preset slow +faststart` | 5.1 MB |
+
+VP9 defaults are wrong for this film. At `-crf 34` the near-black field banded and
+blocked (SSIM 0.9992 / 32.8 dB against the master) — nothing about it looked
+premium. `-crf 20` off the 4K master measures 0.9996 / 36.1 dB and survives a
+3.2× gamma lift with no visible banding, for 700 KB. Check any new encode that
+way: lift the gamma on a dark frame and compare against the master, because SSIM
+barely registers banding in shadows.
 
 ## Why it is built this way
 
@@ -79,8 +100,14 @@ twenty-four). It is a re-stage, not a letterbox.
 
 ## The hero loop
 
-Frame 449 is the same picture as frame 0: the seam sits bright and alone at the
-loop point, the app opens outward from it and drains back into it, and 450 divides
+Three movements, all hung on the seam: it **opens on the lockup** (the mark draws
+to the left of the line, the wordmark rises to the right — the logo's divider and
+the product's seam are the same object), the line opens into the app for three
+impulses, and it **closes on the CTA**. The seam dims under the type, because a
+lit hairline through a line of text reads as a strike-through.
+
+Frame 659 is the same picture as frame 0: the seam sits bright and alone at the
+loop point, the app opens outward from it and drains back into it, and 660 divides
 the 30-frame caret blink so the stitch carries no visible tick.
 
 It runs full-bleed (the film frames the app as an object; a hero already sits in

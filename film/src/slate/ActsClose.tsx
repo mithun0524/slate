@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { at, c, CAM, mono, sans } from "./theme";
 import { Tag, Words } from "./Kinetic";
+import { Mark } from "./Chrome";
 import { AppCard } from "./ActsTurn";
 import { TreeView } from "./Panes";
 
@@ -94,10 +95,6 @@ export const Trust: React.FC = () => {
 
 export const End: React.FC = () => {
   const frame = useCurrentFrame();
-  const box = at(frame, [6, 40], [0, 1], CAM);
-  const seam = at(frame, [30, 52], [0, 1], CAM);
-  const chev = at(frame, [44, 64], [0, 1]);
-
   return (
     <AbsoluteFill
       style={{
@@ -107,35 +104,7 @@ export const End: React.FC = () => {
         background: `rgba(10,10,11,${at(frame, [0, 26], [0, 1])})`,
       }}
     >
-      <svg width={104} height={104} viewBox="0 0 24 24" fill="none">
-        <rect
-          x={2}
-          y={4}
-          width={20}
-          height={16}
-          rx={3}
-          stroke={c.fg}
-          strokeWidth={1.7}
-          strokeDasharray={72}
-          strokeDashoffset={72 - 72 * box}
-        />
-        <path
-          d="M13.5 4v16"
-          stroke={c.fg}
-          strokeWidth={1.7}
-          strokeDasharray={16}
-          strokeDashoffset={16 - 16 * seam}
-        />
-        <path
-          d="m5.4 9.6 2.2 2.2-2.2 2.2"
-          stroke={c.add}
-          strokeWidth={1.7}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeDasharray={7}
-          strokeDashoffset={7 - 7 * chev}
-        />
-      </svg>
+      <Mark frame={frame} size={104} />
 
       <div style={{ textAlign: "center" }}>
         <div
