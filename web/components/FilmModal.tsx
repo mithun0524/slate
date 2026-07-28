@@ -43,6 +43,8 @@ export default function FilmModal() {
       >
         <video
           ref={vid}
+          width={1920}
+          height={1080}
           controls
           playsInline
           preload="none"

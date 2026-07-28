@@ -74,6 +74,8 @@ export default function HeroVideo() {
       <div className="frame">
         <video
           ref={ref}
+          width={1920}
+          height={1080}
           poster="/demo/slate-hero-poster.jpg"
           autoPlay={!still}
           muted
