@@ -28,13 +28,17 @@ export const HERO_TOTAL = 660;
 const BOX = { left: 0, top: 0, width: 1920, height: 1080 };
 const STRIP = 118;
 
-const OPEN = 56; //  the line opens into the app
-const SPEC = 82;
-const DIFF = 210;
-const TREE = 338;
-const CLOSE = 452; //  the app folds back into the line
-const OUTRO = 496;
-const DRAIN = 604; //  the CTA leaves; the line is alone again
+/* Nothing overlaps: the lockup leaves, then the line draws, then the app opens.
+   The line and type are never on screen together in either bookend. */
+const LOCK_OUT = 44; //  wordmark starts leaving
+const HINGE = 58; //   the line draws itself, alone
+const OPEN = 72; //    the line opens into the app
+const SPEC = 98;
+const DIFF = 226;
+const TREE = 354;
+const CLOSE = 462; //  the app folds back into the line
+const OUTRO = 516; //  the line is gone by here
+const DRAIN = 612; //  the CTA leaves; back to black for the stitch
 
 /** The loop joins a session already under way — negative frames are history, so
  *  the shell is never an empty rectangle, not even on the frame it loops to. */
@@ -56,7 +60,7 @@ const LINES: Line[] = [
 /* ── intro: mark and wordmark, split by the seam itself ────────────────── */
 
 const Lockup: React.FC<{ frame: number }> = ({ frame }) => {
-  const gone = at(frame, [OPEN - 14, OPEN + 8], [0, 1], IN);
+  const gone = at(frame, [LOCK_OUT, LOCK_OUT + 12], [0, 1], IN);
   return (
     <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
       <div
@@ -68,8 +72,8 @@ const Lockup: React.FC<{ frame: number }> = ({ frame }) => {
           translate: `0px ${gone * -26}px`,
         }}
       >
-        <div style={{ opacity: at(frame, [8, 22], [0, 1]) }}>
-          <Mark frame={frame} size={104} box={[10, 40]} seam={[30, 50]} chev={[42, 58]} />
+        <div style={{ opacity: at(frame, [10, 24], [0, 1]) }}>
+          <Mark frame={frame} size={104} box={[12, 42]} seam={[32, 52]} chev={[44, 60]} />
         </div>
         <div
           style={{
@@ -144,14 +148,16 @@ export const HeroLoop: React.FC = () => {
   const open =
     at(frame, [OPEN, OPEN + 34], [50, 0], CAM) + at(frame, [CLOSE, CLOSE + 30], [0, 50], IN);
 
-  /** the line is bright whenever it is alone — which is exactly the loop point.
-   *  It dims under the CTA, because a lit hairline through a line of type reads
-   *  as a strike-through, and brightens again before the loop stitch. */
-  const alone =
-    Math.min(
-      1,
-      1 - at(frame, [OPEN, OPEN + 28], [0, 1]) + at(frame, [CLOSE + 16, CLOSE + 40], [0, 1]),
-    ) * (1 - inOut(frame, [OUTRO - 12, OUTRO + 10], [DRAIN, DRAIN + 22]) * 0.82);
+  /** The line is a hinge, not a backdrop. It draws just before the app opens and
+   *  dies once the app's own divider takes over; it comes back to catch the app
+   *  folding, then goes. It is never on screen under type — a lit hairline through
+   *  a line of text reads as a strike-through, dimmed or not — so the loop point
+   *  is clean black at both ends. */
+  const line = Math.min(
+    1,
+    inOut(frame, [HINGE, HINGE + 14], [OPEN + 2, OPEN + 20]) +
+      inOut(frame, [CLOSE + 16, CLOSE + 28], [CLOSE + 34, CLOSE + 52]),
+  );
 
   return (
     <AbsoluteFill style={{ background: c.void }}>
@@ -163,20 +169,20 @@ export const HeroLoop: React.FC = () => {
             height: BOX.height,
             background:
               "radial-gradient(ellipse 40% 60% at 50% 50%, rgba(228,228,230,.09), transparent 70%)",
-            opacity: alone,
+            opacity: line,
           }}
         />
         <div
           style={{
-            width: 1.5 + alone * 1.5,
-            height: BOX.height,
-            background: `rgba(228,228,230,${0.16 + 0.7 * alone})`,
-            boxShadow: `0 0 ${50 * alone}px rgba(228,228,230,${0.5 * alone})`,
+            width: 1.5 + line * 1.5,
+            height: `${line * 100}%`,
+            background: `rgba(228,228,230,${0.9 * line})`,
+            boxShadow: `0 0 ${50 * line}px rgba(228,228,230,${0.5 * line})`,
           }}
         />
       </AbsoluteFill>
 
-      {frame < OPEN + 10 ? <Lockup frame={frame} /> : null}
+      {frame < LOCK_OUT + 14 ? <Lockup frame={frame} /> : null}
 
       <AppCard
         frame={frame}
