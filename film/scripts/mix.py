@@ -8,14 +8,17 @@ Lay the real sound effects and the voiceover over the synthesised bed.
 
 Runs fine before the voiceover exists: it mixes bed + effects and says so.
 
-Every cue is a frame number at 30fps, matching the picture. Effects are real
-recordings (public/sfx/, from remotion.media) rather than synthesised clicks —
-a synthesised click is the single most obvious tell in a mix. Most are trimmed
-to their transient, because a 0.4s recorded click used at full length reads as
-a *sound effect*, whereas its first 60ms reads as the interface itself.
+Every cue is a frame number at 30fps, matching the picture. Effects are real CC0
+recordings, one per cue (scripts/sfx.py pulls them from Freesound) — the first
+pass used five generic samples seventy times, and that density with that little
+variety is exactly what "cheap" sounds like. This pass is nine distinct sounds at
+roughly a third the hits.
 
-The bed ducks under the voice; the effects duck a little less, so a tick that
-lands under a line still cuts through.
+The keyboard fires on every fourth character, not every character: a hit per
+character is a typewriter, not a person.
+
+The bed ducks 9 dB under the voice; the effects duck 3.5 dB, so a tick that lands
+under a line still cuts through.
 """
 
 import array
@@ -128,59 +131,57 @@ def place(name: str, frame: float, gain_db: float, trim: float | None = None, re
             fxR[j] += R[i] * g
 
 
-CLICK = dict(name="mouse-click", trim=0.055)
-KEY = dict(name="switch", trim=0.05)
-
-# I. the sentence being typed, then the keypress that hands it over
+# I. the sentence being typed on a real keyboard, then the keypress that gives
+#    it away. Every fourth character — a hit per character is a typewriter, not a
+#    person, and the ear only needs the rhythm.
 for i, f in enumerate(range(18, 97, 4)):
-    place("switch", f, -27 + (i % 3) * 0.8, trim=0.045)
-place("switch", 108, -13)
-place("whoosh", 108, -17)
+    place("key", f, -25 + (i % 3) * 0.9, trim=0.16)
+place("sub", 108, -11)
+place("whoosh", 108, -19)
 
-# II. every write escaping into the dark
-for i in range(26):
-    place("mouse-click", 190 + i * 5.2, -33, trim=0.06)
+# II. writes escaping into the dark — eight, not twenty-six. The picture already
+#     shows twenty-six; the ear reads eight as "many" and seventy as "cheap".
+for i in range(8):
+    place("tick", 190 + i * 13, -31)
 
-# III. the torrent, and the line that mattered
-place("whoosh", 330, -20)
-place("page-turn", 462, -19)
-place("whoosh", 462, -22, reverse=True)
+# III. the torrent, then the line that mattered
+place("whoosh", 330, -22)
+place("alert", 462, -23)
+place("whoosh", 462, -24, reverse=True)
 
-# IV. one switch per context switch, accelerating with the picture
+# IV. a tick per context switch (every other one), under the only build in the film
 JUMPS = [10, 30, 48, 64, 78, 90, 100, 109, 117, 124, 130, 136, 141, 146, 150, 154, 158, 162]
 for i, j in enumerate(JUMPS):
-    place("switch", 520 + j, -25 + i * 0.32, trim=0.05)
-    if i % 5 == 0:
-        place("whoosh", 520 + j, -26)
+    if i % 2 == 0:
+        place("tick", 520 + j, -28 + i * 0.4)
+place("riser", 646, -21)
 
 # V. scrubbing back, then the wall
-place("whoosh", 744, -17, reverse=True)
-place("page-turn", 806, -14)
+place("whoosh", 744, -18, reverse=True)
+place("impact", 806, -14)
+place("sub", 806, -11)
 
-# VI. the turn — a real bell, over the synthesised sub
-place("ding", 872, -12)
+# VI. the turn. A glass ping, because a bell sounded like a church.
+place("bell", 872, -11)
 
 # VII. each impulse crossing the seam
 for f in (1016, 1126, 1220):
-    place("whoosh", f, -21)
-    place("page-turn", f + 4, -28)
+    place("whoosh", f, -22)
 
 # VIII. the pipeline assembling, then classifier.rs line by line
 for i in range(3):
-    place("switch", 1314 + i * 16, -26, trim=0.05)
+    place("tick", 1314 + i * 16, -27)
 for i in range(5):
-    place("mouse-click", 1368 + i * 6, -32, trim=0.05)
+    place("tick", 1368 + i * 6, -33)
 
 # IX. the ghost chrome collapsing into the seam
 place("whoosh", 1506, -18, reverse=True)
 
-# X. the spec sheet
-for i in range(5):
-    place("mouse-click", 1608 + i * 7, -31, trim=0.05)
+# X. the spec sheet landing
+place("paper", 1608, -22)
 
-# XI. the mark
-place("ding", 1694, -19)
-place("switch", 1782, -24, trim=0.05)
+# XI. the mark — the ping again, quieter: the film ends where it turned
+place("bell", 1694, -21)
 
 # ── voice ─────────────────────────────────────────────────────────────────
 

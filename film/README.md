@@ -83,35 +83,41 @@ Four sources, assembled by one script:
 
 ```
 python3 scripts/score.py    →  public/bed.wav     drones, sub drops, risers, pads (synth)
-sh      scripts/sfx.sh      →  public/sfx/*.wav   real recordings: switch, click, whoosh, page-turn, bell
-node    scripts/vo.mjs      →  public/vo/NN.mp3   ElevenLabs, 11 lines (needs .env.local)
+python3 scripts/sfx.py      →  public/sfx/*.wav   nine CC0 recordings from Freesound
+node    scripts/vo.mjs      →  public/vo/NN.mp3   ElevenLabs, 15 lines
 python3 scripts/mix.py      →  public/mix.wav     ← what the film plays
 ```
 
-**Nothing mechanical is synthesised.** The first pass synthesised its clicks and
-that is exactly what made it sound cheap — a synthesised click is the most obvious
-tell in a mix. Every tick, switch, page turn and the bell at the turn is now a real
-recording, and most are **trimmed to their first ~50ms**: a 0.4s recorded click
-played whole reads as *a sound effect*, while its transient reads as the interface
-itself. What stays synthesised is what synthesises well — low sines, filtered noise,
-slow pads — and it lives at −7.5 dBFS to leave room above.
+`.env.local` (gitignored) holds `ELEVENLABS_API_KEY` and `FREESOUND_API_KEY`.
 
-**The voice argues; the type states.** The captions carry the facts, so the
-voiceover never reads them aloud (the one exception is the payoff line, where
-hearing and seeing it together is the point). Low, calm, British male, 0.94×
-speed. The bed ducks 9 dB under it with a 140 ms attack and 340 ms release;
-effects duck only 3.5 dB so a tick under a line still cuts through.
+**The voice reads the captions.** Every line is frame-locked to the caption it
+speaks, word-for-word. The first attempt had the voice *arguing alongside* the
+type — different words, same moment — and 20 of 23 overlaps were the viewer being
+asked to read one sentence while hearing another. Both comprehensions drop. Text
+and voice must either say the same thing together or take turns; they cannot
+compete. 31s of speech in 60s (52%). One deliberate omission: the screen says "The
+change that broke it is gone" and the voice does not, because speaking it would
+cross the silence at the turn.
 
-**Talk is 38s of 60 — 64%.** The first cut was 71% and felt like a webinar; one
-line went because it said what the captions and the line before it already said.
-`scripts/mix.py` re-runs in ~10s, so check every retime by ear.
+**Nine sounds, not five used seventy times.** That density with that little
+variety is what "cheap" sounds like. `scripts/sfx.py` asks Freesound for one
+specific recording per cue (CC0 only, so nothing owes attribution) and scores
+candidates by name so a UI tick does not come back as "Water Click" — it did.
+Approved sounds are **pinned by id**, because Freesound ranks by download count
+and a re-run must not silently swap a sound the film was cut against. The bell is
+a glass ping: a real bell read as a church.
 
-Timing is verified, not eyeballed: no line may overlap the next, run past frame
-1800, or intrude on the twelve frames of silence at the turn — that silence is
-the loudest thing in the film.
+The keyboard fires on every fourth character. A hit per character is a typewriter,
+not a person.
 
-To change a line: edit `scripts/vo-script.json`, delete that line's mp3, re-run
-`vo.mjs` (only the missing line is billed) and `mix.py`.
+**Levels.** Bed prints at −7.5 dBFS to leave room; it ducks 9 dB under the voice
+with a 140 ms attack and 340 ms release, effects duck only 3.5 dB so a tick under
+a line still cuts through. Mix peaks at −3.1 dBFS, mean −18.5.
+
+Timing is verified, not eyeballed: no line may overlap the next, start off its
+caption, run past frame 1800, or intrude on the twelve frames of silence at the
+turn — that silence is the loudest thing in the film. `mix.py` rebuilds in ~10s,
+so every retime gets checked by ear.
 
 ## The vertical cut
 
