@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { THEMES, type ThemeId } from "../lib/themes";
 import { OVERRIDE_PORT } from "../lib/ipc";
+import { useExit } from "../lib/useExit";
 
 // Settings panel: theme picker + reference info. (More knobs land in Phase 2.)
 export function SettingsDrawer({
@@ -11,12 +13,22 @@ export function SettingsDrawer({
   onSetTheme: (id: ThemeId) => void;
   onClose: () => void;
 }) {
+  const { closing, close } = useExit(onClose, 200); // matches the slide-out
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [close]);
+
   return (
-    <div className="drawer-overlay" onMouseDown={onClose}>
-      <div className="drawer" onMouseDown={(e) => e.stopPropagation()}>
+    <div className={`drawer-overlay ${closing ? "closing" : ""}`} onMouseDown={close}>
+      <div
+        className={`drawer ${closing ? "closing" : ""}`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="drawer-head">
           <span>Settings</span>
-          <button className="drawer-x" onClick={onClose}>
+          <button className="drawer-x" onClick={close}>
             ✕
           </button>
         </div>

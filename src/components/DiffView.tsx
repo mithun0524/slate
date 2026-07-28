@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { gitDiff } from "../lib/ipc";
+import { FileView } from "./FileView";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 type LineType = "add" | "del" | "ctx";
@@ -75,6 +76,11 @@ export function parseDiff(patch: string): FileDiff[] {
       continue;
     }
     if (!hunk) continue;
+    // The split on "\n" leaves a trailing "" for the final newline, and git
+    // emits "\ No newline at end of file" — neither is a diff line. Without
+    // this they render as a blank context row and bump the line numbers. A
+    // genuinely empty source line arrives as " ", not "".
+    if (line === "" || line.startsWith("\\ ")) continue;
     const sign = line[0];
     const text = line.slice(1);
     if (sign === "+") {
@@ -290,7 +296,9 @@ export function FileBlock({ file, mode }: { file: FileDiff; mode: Mode }) {
 }
 
 export function DiffView({ paths, refreshKey }: { paths: string[]; refreshKey: number }) {
-  const [patch, setPatch] = useState<string>("");
+  // null = not loaded yet. Rendering "" would flash "nothing changed" for a
+  // frame before the real patch lands.
+  const [patch, setPatch] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("unified");
 
@@ -305,7 +313,7 @@ export function DiffView({ paths, refreshKey }: { paths: string[]; refreshKey: n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey, paths.join("|")]);
 
-  const files = useMemo(() => parseDiff(patch), [patch]);
+  const files = useMemo(() => parseDiff(patch ?? ""), [patch]);
   const totals = useMemo(
     () =>
       files.reduce((a, f) => ({ add: a.add + f.additions, del: a.del + f.deletions }), {
@@ -314,6 +322,8 @@ export function DiffView({ paths, refreshKey }: { paths: string[]; refreshKey: n
       }),
     [files],
   );
+
+  if (patch === null && !err) return null; // mount (and fade in) once there's something to show
 
   return (
     <div className="view diff-view">
@@ -352,6 +362,10 @@ export function DiffView({ paths, refreshKey }: { paths: string[]; refreshKey: n
             ? "Not a git repository."
             : err}
         </div>
+      ) : files.length === 0 && paths.length === 1 ? (
+        // A single file with no diff (already committed, or opened from search
+        // / the palette) used to dead-end on "nothing changed" — show it.
+        <FileView path={paths[0]} crumb={false} />
       ) : files.length === 0 ? (
         <div className="view-empty">
           <div className="empty-glyph">≡</div>

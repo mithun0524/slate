@@ -1,0 +1,10 @@
+# Slate — security contact
+Contact: mailto:security@slate.tools
+Expires: 2027-07-14T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://slate.tools/.well-known/security.txt
+Policy: https://slate.tools/terms/
+
+# Slate makes no network requests and stores no user data.
+# Report vulnerabilities in the application or this site to the address above.
+# We aim to acknowledge within 72 hours and to credit reporters in the changelog.

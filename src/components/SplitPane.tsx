@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 // A horizontal resizable split: left pane | draggable divider | right pane.
 // `initial` and the clamp bounds are fractions of total width (0..1).
@@ -8,16 +8,28 @@ export function SplitPane({
   initial = 0.5,
   min = 0.2,
   max = 0.8,
+  onRatio,
 }: {
   left: ReactNode;
   right: ReactNode;
   initial?: number;
   min?: number;
   max?: number;
+  /// Fires when a drag ends, so the caller can persist the position.
+  onRatio?: (r: number) => void;
 }) {
   const [ratio, setRatio] = useState(initial);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  // endDrag is memoised; read the live ratio through a ref, not the closure.
+  const ratioRef = useRef(ratio);
+  ratioRef.current = ratio;
+
+  // Adopt a new `initial` (switching workspace restores that one's layout)
+  // unless the user is mid-drag.
+  useEffect(() => {
+    if (!dragging.current) setRatio(initial);
+  }, [initial]);
 
   const onMove = useCallback(
     (clientX: number) => {
@@ -49,7 +61,8 @@ export function SplitPane({
     setActive(false);
     document.body.classList.remove("dragging-split");
     window.getSelection()?.removeAllRanges();
-  }, []);
+    onRatio?.(ratioRef.current);
+  }, [onRatio]);
 
   return (
     <div

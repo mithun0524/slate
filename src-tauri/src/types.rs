@@ -99,6 +99,23 @@ pub struct CommitInfo {
     pub time: i64,
 }
 
+/// A local branch, for the branch switcher.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BranchInfo {
+    pub name: String,
+    pub current: bool,
+    /// Tracking branch, e.g. "origin/main". None = never pushed.
+    pub upstream: Option<String>,
+}
+
+/// One entry in `git stash list`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StashEntry {
+    /// Position in the stash stack; `stash@{index}`.
+    pub index: usize,
+    pub message: String,
+}
+
 /// One entry in the git status listing (flat; the frontend builds the tree).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TreeEntry {

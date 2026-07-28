@@ -4,6 +4,7 @@
 //! dropping it stops watching and closes the debounce thread.
 
 use crate::classifier::classify;
+use crate::scan::Ignorer;
 use crate::types::{ChangeKind, FileBurst, FileChange, IntentEvent, IntentSource};
 use notify::{Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher};
 use std::path::{Path, PathBuf};
@@ -12,28 +13,6 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 const DEBOUNCE_MS: u64 = 400;
-
-/// Directory segments we never surface (noise / build artifacts / OS churn).
-const IGNORED: &[&str] = &[
-    ".git",
-    "node_modules",
-    "target",
-    "dist",
-    "build",
-    ".next",
-    ".DS_Store",
-    // high-churn OS / cache dirs (matter when the workspace is a home dir)
-    "Library",
-    "Applications",
-    "Caches",
-    ".cache",
-    ".Trash",
-    ".Trashes",
-    ".cargo",
-    ".rustup",
-    ".npm",
-    ".vscode",
-];
 
 /// Start watching `root` recursively. Returns the watcher handle to keep alive.
 pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String> {
@@ -49,6 +28,11 @@ pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String
     watcher
         .watch(&root, RecursiveMode::Recursive)
         .map_err(|e| e.to_string())?;
+
+    // Built once per workspace: the repo's own .gitignore decides what's noise,
+    // on top of the always-ignored list. A project's `.venv/`, `coverage/` or
+    // `__pycache__/` used to generate reactive churn here.
+    let ignorer = Ignorer::new(&root);
 
     // Debounce + classify on a background thread.
     std::thread::spawn(move || loop {
@@ -68,7 +52,7 @@ pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String
             }
         }
 
-        let burst = build_burst(&root, raw);
+        let burst = build_burst(&root, raw, &ignorer);
         if burst.events.is_empty() {
             continue;
         }
@@ -84,7 +68,7 @@ pub fn start(app: AppHandle, root: PathBuf) -> Result<RecommendedWatcher, String
     Ok(watcher)
 }
 
-fn build_burst(root: &Path, raw: Vec<Event>) -> FileBurst {
+fn build_burst(root: &Path, raw: Vec<Event>, ignorer: &Ignorer) -> FileBurst {
     let mut events: Vec<FileChange> = Vec::new();
     for ev in raw {
         let kind = match ev.kind {
@@ -94,7 +78,9 @@ fn build_burst(root: &Path, raw: Vec<Event>) -> FileBurst {
             _ => continue, // Access / Any / Other -> ignore
         };
         for path in ev.paths {
-            if is_ignored(&path) {
+            // A deleted path can't be stat'd, so is_dir() is false — that only
+            // costs us directory-only gitignore rules on deletes.
+            if ignorer.ignored(&path, path.is_dir()) {
                 continue;
             }
             let rel = match path.strip_prefix(root) {
@@ -116,9 +102,69 @@ fn build_burst(root: &Path, raw: Vec<Event>) -> FileBurst {
     FileBurst { events }
 }
 
-fn is_ignored(path: &Path) -> bool {
-    path.components().any(|c| {
-        let s = c.as_os_str().to_string_lossy();
-        IGNORED.iter().any(|ig| *ig == s)
-    })
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use notify::event::{CreateKind, ModifyKind};
+    use std::fs;
+
+    fn ev(kind: EventKind, paths: Vec<PathBuf>) -> Event {
+        Event {
+            kind,
+            paths,
+            attrs: Default::default(),
+        }
+    }
+
+    #[test]
+    fn burst_drops_ignored_paths_and_relativises() {
+        let root = std::env::temp_dir().join("vellum-watcher-burst");
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join(".gitignore"), "coverage/\n").unwrap();
+        let ignorer = Ignorer::new(&root);
+
+        let burst = build_burst(
+            &root,
+            vec![
+                ev(
+                    EventKind::Modify(ModifyKind::Any),
+                    vec![root.join("src/a.rs")],
+                ),
+                ev(
+                    EventKind::Modify(ModifyKind::Any),
+                    vec![root.join("coverage/report.html")], // .gitignore
+                ),
+                ev(
+                    EventKind::Create(CreateKind::Any),
+                    vec![root.join("node_modules/x/index.js")], // ALWAYS
+                ),
+                ev(EventKind::Any, vec![root.join("b")]), // not a create/modify/delete
+            ],
+            &ignorer,
+        );
+
+        assert_eq!(burst.events.len(), 1, "{:?}", burst.events);
+        assert_eq!(burst.events[0].path, "src/a.rs");
+        assert_eq!(burst.events[0].kind, ChangeKind::Modified);
+    }
+
+    #[test]
+    fn consecutive_duplicates_collapse() {
+        let root = std::env::temp_dir().join("vellum-watcher-dupes");
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        let ignorer = Ignorer::new(&root);
+        let p = root.join("a.rs");
+        let burst = build_burst(
+            &root,
+            vec![
+                ev(EventKind::Modify(ModifyKind::Any), vec![p.clone()]),
+                ev(EventKind::Modify(ModifyKind::Any), vec![p.clone()]),
+                ev(EventKind::Modify(ModifyKind::Any), vec![p]),
+            ],
+            &ignorer,
+        );
+        assert_eq!(burst.events.len(), 1);
+    }
 }

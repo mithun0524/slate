@@ -1,15 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   gitBranch,
+  gitBranches,
+  gitCheckout,
   gitCommit,
   gitDiscard,
+  gitFetch,
+  gitPull,
+  gitPush,
   gitStage,
+  gitStashList,
+  gitStashPop,
+  gitStashPush,
   gitTree,
   gitUnstage,
+  type BranchInfo,
+  type StashEntry,
   type TreeEntry,
 } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
-import { ChevronDown, FileDiff, GitBranch, Minus, Plus, Undo2 } from "lucide-react";
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Check,
+  ChevronDown,
+  FileDiff,
+  GitBranch,
+  Inbox,
+  Minus,
+  Plus,
+  RefreshCw,
+  Undo2,
+} from "lucide-react";
 
 const LETTER: Record<string, string> = {
   new: "A",
@@ -78,12 +100,20 @@ export function SourceControl({
   onSelect: (p: string) => void;
   onChanged: () => void;
 }) {
-  const [entries, setEntries] = useState<TreeEntry[]>([]);
+  // null = first load pending; [] would flash the "No changes." empty state.
+  const [entries, setEntries] = useState<TreeEntry[] | null>(null);
   const [branch, setBranch] = useState("");
   const [msg, setMsg] = useState("");
   const [note, setNote] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [menu, setMenu] = useState(false);
+  const [pending, setPending] = useState<string[] | null>(null);
+
+  const [branchMenu, setBranchMenu] = useState(false);
+  const [branchList, setBranchList] = useState<BranchInfo[]>([]);
+  const [newBranch, setNewBranch] = useState("");
+  const [stashes, setStashes] = useState<StashEntry[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -93,25 +123,60 @@ export function SourceControl({
     gitBranch()
       .then((b) => alive && setBranch(b))
       .catch(() => {});
+    gitStashList()
+      .then((s) => alive && setStashes(s))
+      .catch(() => alive && setStashes([]));
     return () => {
       alive = false;
     };
   }, [refreshKey]);
 
-  const staged = useMemo(() => entries.filter((e) => e.staged), [entries]);
-  const unstaged = useMemo(() => entries.filter((e) => !e.staged), [entries]);
+  // Branch list is only needed when the switcher is open.
+  useEffect(() => {
+    if (!branchMenu) return;
+    let alive = true;
+    gitBranches()
+      .then((b) => alive && setBranchList(b))
+      .catch((e) => alive && setNote(String(e)));
+    return () => {
+      alive = false;
+    };
+  }, [branchMenu, refreshKey]);
+
+  /// Run a git operation that talks to the network or rewrites the worktree:
+  /// one at a time, report what happened, refresh everything after.
+  const op = async (label: string, fn: () => Promise<string>) => {
+    if (busy) return;
+    setBusy(label);
+    setNote(`${label}…`);
+    try {
+      const out = await fn();
+      setNote(out.split("\n").slice(-1)[0] || `${label} done`);
+      onChanged();
+    } catch (e) {
+      setNote(String(e).split("\n").slice(0, 2).join(" "));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const switchTo = (name: string, create: boolean) => {
+    setBranchMenu(false);
+    setNewBranch("");
+    op(create ? `creating ${name}` : `switching to ${name}`, () => gitCheckout(name, create));
+  };
+
+  const staged = useMemo(() => (entries ?? []).filter((e) => e.staged), [entries]);
+  const unstaged = useMemo(() => (entries ?? []).filter((e) => !e.staged), [entries]);
 
   const run = (p: Promise<unknown>) =>
     p.then(() => onChanged()).catch((e) => setNote(String(e)));
 
   const stage = (paths: string[]) => paths.length && run(gitStage(paths));
   const unstage = (paths: string[]) => paths.length && run(gitUnstage(paths));
-  const discard = (paths: string[]) => {
-    if (!paths.length) return;
-    const what = paths.length === 1 ? paths[0] : `${paths.length} files`;
-    if (!window.confirm(`Discard changes to ${what}? This cannot be undone.`)) return;
-    run(gitDiscard(paths));
-  };
+  // In-app confirm bar rather than window.confirm — a native OS sheet in a
+  // custom-chrome window is the most jarring thing in the app.
+  const discard = (paths: string[]) => paths.length && setPending(paths);
 
   const doCommit = async () => {
     if (!msg.trim()) return;
@@ -129,19 +194,98 @@ export function SourceControl({
     }
   };
 
-  const canCommit = msg.trim().length > 0 && entries.length > 0;
+  const canCommit = msg.trim().length > 0 && (entries?.length ?? 0) > 0;
+
+  if (entries === null && !err) return null; // don't flash "No changes." before the first load
 
   return (
     <div className="view scm-view">
       <div className="view-crumb">
         <span className="crumb-label">source control</span>
-        {branch && (
-          <span className="crumb-stat">
-            <span className="pill scm-branch">
-              <GitBranch size={11} /> {branch}
+        <span className="crumb-stat scm-bar">
+          {branch && (
+            <span className="scm-branch-wrap">
+              <button
+                className="pill scm-branch"
+                title="Switch branch"
+                onClick={() => setBranchMenu((v) => !v)}
+              >
+                <GitBranch size={11} /> {branch}
+                <ChevronDown size={11} />
+              </button>
+              {branchMenu && (
+                <div className="scm-branch-menu" onMouseLeave={() => setBranchMenu(false)}>
+                  <input
+                    className="scm-branch-new"
+                    placeholder="New branch from HEAD…"
+                    value={newBranch}
+                    onChange={(e) => setNewBranch(e.currentTarget.value)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && newBranch.trim() && switchTo(newBranch.trim(), true)
+                    }
+                  />
+                  <div className="scm-branch-list">
+                    {branchList.map((b) => (
+                      <button
+                        key={b.name}
+                        className={`scm-branch-item ${b.current ? "on" : ""}`}
+                        disabled={b.current}
+                        onClick={() => switchTo(b.name, false)}
+                      >
+                        {b.current ? <Check size={13} /> : <GitBranch size={13} />}
+                        <span className="scm-branch-name">{b.name}</span>
+                        {b.upstream ? (
+                          <span className="scm-branch-up">{b.upstream}</span>
+                        ) : (
+                          <span className="scm-branch-up dim">local</span>
+                        )}
+                      </button>
+                    ))}
+                    {branchList.length === 0 && <div className="scm-branch-empty">no branches</div>}
+                  </div>
+                </div>
+              )}
             </span>
-          </span>
-        )}
+          )}
+
+          <button
+            className="scm-act"
+            title="Fetch"
+            disabled={!!busy}
+            onClick={() => op("fetching", gitFetch)}
+          >
+            <RefreshCw size={14} />
+          </button>
+          <button
+            className="scm-act"
+            title="Pull (fast-forward only)"
+            disabled={!!busy}
+            onClick={() => op("pulling", gitPull)}
+          >
+            <ArrowDownToLine size={14} />
+          </button>
+          <button
+            className="scm-act"
+            title="Push"
+            disabled={!!busy}
+            onClick={() => op("pushing", gitPush)}
+          >
+            <ArrowUpFromLine size={14} />
+          </button>
+          <button
+            className="scm-act"
+            title={stashes.length ? `Pop latest stash (${stashes.length})` : "Stash all changes"}
+            disabled={!!busy || (!stashes.length && !(entries?.length ?? 0))}
+            onClick={() =>
+              stashes.length
+                ? op("popping stash", () => gitStashPop(0))
+                : op("stashing", () => gitStashPush(msg.trim()))
+            }
+          >
+            <Inbox size={14} />
+            {stashes.length > 0 && <span className="scm-stash-count">{stashes.length}</span>}
+          </button>
+        </span>
       </div>
 
       <div className="scm-commit">
@@ -185,6 +329,29 @@ export function SourceControl({
       </div>
       {note && <div className="commit-note">{note}</div>}
 
+      {pending && (
+        <div className="scm-confirm">
+          <span>
+            Discard changes to{" "}
+            <strong>{pending.length === 1 ? pending[0] : `${pending.length} files`}</strong>? This
+            cannot be undone.
+          </span>
+          <button className="scm-confirm-no" onClick={() => setPending(null)}>
+            Cancel
+          </button>
+          <button
+            className="scm-confirm-yes"
+            onClick={() => {
+              const paths = pending;
+              setPending(null);
+              run(gitDiscard(paths));
+            }}
+          >
+            Discard
+          </button>
+        </div>
+      )}
+
       {err ? (
         <div className="view-empty">
           <div className="empty-glyph">⎇</div>
@@ -192,7 +359,7 @@ export function SourceControl({
             ? "Not a git repository."
             : err}
         </div>
-      ) : entries.length === 0 ? (
+      ) : entries?.length === 0 ? (
         <div className="view-empty">
           <div className="empty-glyph">✓</div>
           No changes.

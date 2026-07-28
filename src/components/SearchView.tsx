@@ -1,85 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { readText, searchText, type FileMatches, type LineMatch } from "../lib/ipc";
+import { searchText, type FileMatches } from "../lib/ipc";
 import { FileIcon } from "./FileIcon";
+import { FileView, Highlight } from "./FileView";
 import { SplitPane } from "./SplitPane";
-
-function Highlight({ text, col, len }: { text: string; col: number; len: number }) {
-  const chars = Array.from(text);
-  return (
-    <>
-      {chars.slice(0, col).join("")}
-      <mark className="sr-hit">{chars.slice(col, col + len).join("")}</mark>
-      {chars.slice(col + len).join("")}
-    </>
-  );
-}
 
 interface Selected {
   file: FileMatches;
   line: number;
-}
-
-// Read the file and show it with matched lines highlighted, scrolled to the
-// clicked line — a preview beside the results (no navigating away).
-function FilePreview({ sel }: { sel: Selected }) {
-  const [lines, setLines] = useState<string[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const activeRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let alive = true;
-    readText(sel.file.path)
-      .then((t) => alive && (setLines(t.split("\n")), setErr(null)))
-      .catch((e) => alive && setErr(String(e)));
-    return () => {
-      alive = false;
-    };
-  }, [sel.file.path]);
-
-  // First match per line, for inline highlighting.
-  const byLine = useMemo(() => {
-    const m = new Map<number, LineMatch>();
-    for (const x of sel.file.matches) if (!m.has(x.line)) m.set(x.line, x);
-    return m;
-  }, [sel.file]);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => {
-      activeRef.current?.scrollIntoView({ block: "center" });
-    }, 20);
-    return () => window.clearTimeout(t);
-  }, [sel, lines]);
-
-  return (
-    <div className="fp">
-      <div className="view-crumb">
-        <span className="crumb-label">{sel.file.path}</span>
-      </div>
-      {err ? (
-        <div className="view-empty">{err}</div>
-      ) : (
-        <div className="fp-scroll">
-          {lines.map((text, i) => {
-            const ln = i + 1;
-            const m = byLine.get(ln);
-            const active = ln === sel.line;
-            return (
-              <div
-                key={i}
-                ref={active ? activeRef : undefined}
-                className={`fp-line ${m ? "match" : ""} ${active ? "active" : ""}`}
-              >
-                <span className="fp-lineno">{ln}</span>
-                <span className="fp-code">
-                  {m ? <Highlight text={text} col={m.col} len={m.len} /> : text || " "}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
 }
 
 export function SearchView() {
@@ -208,7 +135,7 @@ export function SearchView() {
         </div>
       ) : sel ? (
         <div className="sr-main">
-          <SplitPane left={resultsEl} right={<FilePreview sel={sel} />} initial={0.4} min={0.25} max={0.7} />
+          <SplitPane left={resultsEl} right={<FileView path={sel.file.path} matches={sel.file.matches} activeLine={sel.line} />} initial={0.4} min={0.25} max={0.7} />
         </div>
       ) : (
         <div className="sr-main">{resultsEl}</div>

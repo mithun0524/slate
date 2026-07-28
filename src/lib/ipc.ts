@@ -140,6 +140,34 @@ export const gitDiscard = (paths: string[]): Promise<void> =>
 export const gitCommit = (message: string): Promise<string> =>
   invoke("git_commit", { message });
 
+export interface BranchInfo {
+  name: string;
+  current: boolean;
+  upstream: string | null;
+}
+export interface StashEntry {
+  index: number;
+  message: string;
+}
+
+export const gitBranches = (): Promise<BranchInfo[]> => invoke("git_branches");
+
+export const gitCheckout = (name: string, create: boolean): Promise<string> =>
+  invoke("git_checkout", { name, create });
+
+export const gitFetch = (): Promise<string> => invoke("git_fetch");
+export const gitPull = (): Promise<string> => invoke("git_pull");
+export const gitPush = (): Promise<string> => invoke("git_push");
+
+export const gitStashPush = (message: string): Promise<string> =>
+  invoke("git_stash_push", { message });
+export const gitStashPop = (index: number): Promise<string> =>
+  invoke("git_stash_pop", { index });
+export const gitStashList = (): Promise<StashEntry[]> => invoke("git_stash_list");
+
+export const openExternal = (url: string): Promise<void> =>
+  invoke("open_external", { url });
+
 // --- events ---
 
 export interface PtyData {

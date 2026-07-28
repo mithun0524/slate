@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listSpecs } from "../lib/ipc";
+import { useExit } from "../lib/useExit";
 import { THEMES, type ThemeId } from "../lib/themes";
 import type { ActItem } from "./ActivityBar";
 
@@ -49,6 +50,7 @@ export function CommandPalette({
   const [sel, setSel] = useState(0);
   const [specs, setSpecs] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { closing, close } = useExit(onClose);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -60,7 +62,7 @@ export function CommandPalette({
   const commands = useMemo<Cmd[]>(() => {
     const wrap = (fn: () => void) => () => {
       fn();
-      onClose();
+      close();
     };
     const base: Cmd[] = [
       { id: "go-specs", label: "Go to Specs", hint: "view", run: wrap(() => onNavigate("specs")) },
@@ -89,7 +91,7 @@ export function CommandPalette({
       })),
     ];
     return base;
-  }, [specs, onClose, onNavigate, onOpenSpec, onTogglePin, onOpenSettings, onSetTheme, onOpenFolder, onCloseWorkspace]);
+  }, [specs, close, onNavigate, onOpenSpec, onTogglePin, onOpenSettings, onSetTheme, onOpenFolder, onCloseWorkspace]);
 
   const filtered = useMemo(() => {
     return commands
@@ -112,14 +114,23 @@ export function CommandPalette({
     } else if (e.key === "Enter") {
       e.preventDefault();
       filtered[sel]?.run();
-    } else if (e.key === "Escape") {
-      onClose();
     }
   };
 
+  // On window, not the input: clicking the palette body moves focus off the
+  // input, and Esc must still close.
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [close]);
+
   return (
-    <div className="palette-overlay" onMouseDown={onClose}>
-      <div className="palette" onMouseDown={(e) => e.stopPropagation()}>
+    <div className={`palette-overlay ${closing ? "closing" : ""}`} onMouseDown={close}>
+      <div
+        className={`palette ${closing ? "closing" : ""}`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <input
           ref={inputRef}
           className="palette-input"

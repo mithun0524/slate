@@ -91,7 +91,10 @@ export function ActivityFeed({
 
       {history.length === 0 ? (
         <div className="view-empty">
-          <div className="empty-glyph">◔</div>
+          {/* was "◔", which reads as a half-loaded spinner — a stuck app, not an empty log */}
+          <div className="empty-glyph">
+            <Icon name="activity" />
+          </div>
           Nothing yet — edit a spec or change files and watch it stream in.
         </div>
       ) : (

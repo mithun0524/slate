@@ -25,3 +25,7 @@ dist-ssr
 
 # rust
 /src-tauri/target
+
+# installed agent skills (vendored, re-installable via npx skills add)
+.agents/
+.claude/

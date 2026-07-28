@@ -15,6 +15,7 @@ import { type ActivityEntry } from "./components/ActivityFeed";
 import { ReplayView } from "./components/ReplayView";
 import { MessageSquare } from "lucide-react";
 import { applyTheme, loadTheme, type ThemeId } from "./lib/themes";
+import { DEFAULT_SESSION, loadSession, maxTermSeq, saveSession } from "./lib/session";
 import {
   gitDiff,
   gitHeadInfo,
@@ -32,6 +33,9 @@ import {
 import "./styles.css";
 
 type Source = IntentSource | "manual";
+
+/// How many recent activity entries keep their replayable diff snapshot.
+const PATCH_KEEP = 20;
 
 function App() {
   const [opened, setOpened] = useState(false);
@@ -56,12 +60,13 @@ function App() {
     }
   });
 
-  const [terms, setTerms] = useState<Term[]>([{ id: "t1", title: "Terminal 1" }]);
-  const [activeTerm, setActiveTerm] = useState("t1");
+  const [terms, setTerms] = useState<Term[]>(DEFAULT_SESSION.terms);
+  const [activeTerm, setActiveTerm] = useState(DEFAULT_SESSION.activeTerm);
+  const [split, setSplit] = useState(DEFAULT_SESSION.split);
   const [approvals, setApprovals] = useState<ApprovalReq[]>([]);
   const [history, setHistory] = useState<ActivityEntry[]>([]);
   const [replay, setReplay] = useState<ActivityEntry | null>(null);
-  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]);
+  const [toasts, setToasts] = useState<{ id: number; text: string; out?: boolean }[]>([]);
   const entryId = useRef(0);
 
   const pinnedRef = useRef(pinned);
@@ -139,10 +144,11 @@ function App() {
       // Log every reactive event (even when pinned) — this is the movie of the work.
       const id = ++entryId.current;
       setHistory((h) =>
-        [{ id, intent: ev.intent, source: ev.source, at: Date.now(), burst: ev.burst }, ...h].slice(
-          0,
-          300,
-        ),
+        // 300 entries are kept for the feed, but only the newest PATCH_KEEP carry
+        // their diff snapshot — otherwise a long session retains ~60MB of patches.
+        [{ id, intent: ev.intent, source: ev.source, at: Date.now(), burst: ev.burst }, ...h]
+          .slice(0, 300)
+          .map((e, i) => (i >= PATCH_KEEP && e.patch !== undefined ? { ...e, patch: undefined } : e)),
       );
       // Snapshot the working-tree diff so this event is replayable later.
       if (ev.intent.kind === "diff" || ev.intent.kind === "tree") {
@@ -200,6 +206,11 @@ function App() {
         [{ id, note: text, source: "override" as const, at: Date.now() }, ...h].slice(0, 300),
       );
       setToasts((t) => [...t, { id, text }]);
+      // Fade out before the row is pulled, so it doesn't just blink away.
+      window.setTimeout(
+        () => setToasts((t) => t.map((x) => (x.id === id ? { ...x, out: true } : x))),
+        4300,
+      );
       window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
     });
     return () => {
@@ -245,10 +256,7 @@ function App() {
           return;
         }
       }
-      if (e.key === "Escape") {
-        setPaletteOpen(false);
-        setSettingsOpen(false);
-      }
+      // Escape is handled inside each overlay so its exit animation can play.
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -267,7 +275,15 @@ function App() {
       setRecents(next);
       localStorage.setItem("vellum.recents", JSON.stringify(next));
       localStorage.setItem("slate.last", target);
-      apply({ kind: "tree" }, "manual");
+
+      // Restore this workspace's last layout (terminals, split, view).
+      const s = loadSession(target);
+      setTerms(s.terms);
+      setActiveTerm(s.activeTerm);
+      termSeq.current = maxTermSeq(s.terms);
+      setSplit(s.split);
+      setPinned(s.pinned);
+      apply(s.intent, "manual");
     } catch (e) {
       console.error("open failed", e);
     }
@@ -284,6 +300,12 @@ function App() {
     const s = await openDialog({ directory: true, multiple: false, title: "Open folder" });
     if (typeof s === "string") openWith(s);
   };
+
+  // Persist the layout whenever any part of it settles.
+  useEffect(() => {
+    if (!opened || !wsPath) return;
+    saveSession(wsPath, { terms, activeTerm, split, intent, pinned });
+  }, [opened, wsPath, terms, activeTerm, split, intent, pinned]);
 
   const closeWorkspace = () => setOpened(false);
 
@@ -323,6 +345,8 @@ function App() {
       <TitleBar cwd={wsPath} onCommand={() => setPaletteOpen(true)} />
       <div className="shell-main">
         <SplitPane
+          initial={split}
+          onRatio={setSplit}
           left={
             <TerminalPane
               terms={terms}
@@ -378,7 +402,7 @@ function App() {
       {toasts.length > 0 && (
         <div className="toasts">
           {toasts.map((t) => (
-            <div className="toast" key={t.id}>
+            <div className={`toast ${t.out ? "out" : ""}`} key={t.id}>
               <MessageSquare size={14} />
               <span>{t.text}</span>
             </div>

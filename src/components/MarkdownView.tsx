@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import MarkdownIt from "markdown-it";
-import hljs from "highlight.js";
+// `lib/common` = ~40 common languages instead of all ~190 (bundle: -700KB).
+import hljs from "highlight.js/lib/common";
 import "highlight.js/styles/github-dark.css";
 import { readAsset, readText, writeText } from "../lib/ipc";
 
@@ -55,7 +56,8 @@ export function MarkdownView({
   path: string;
   refreshKey: number;
 }) {
-  const [raw, setRaw] = useState<string>("");
+  // null = first load pending; "" would paint an empty document for a frame.
+  const [raw, setRaw] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function MarkdownView({
     // shown* spec re-reads it (same path would otherwise skip the effect).
   }, [path, refreshKey]);
 
-  const html = useMemo(() => md.render(injectTasks(raw)), [raw]);
+  const html = useMemo(() => md.render(injectTasks(raw ?? "")), [raw]);
   const bodyRef = useRef<HTMLDivElement>(null);
 
   // Wire task-list checkboxes: toggle -> flip source line -> write file.
@@ -81,7 +83,7 @@ export function MarkdownView({
     const onToggle = (e: Event) => {
       const el = e.currentTarget as HTMLInputElement;
       const ti = Number(el.getAttribute("data-ti"));
-      const next = flipTask(raw, ti);
+      const next = flipTask(raw ?? "", ti);
       setRaw(next); // optimistic
       writeText(path, next).catch(() => setRaw(raw)); // revert on failure
     };
@@ -114,6 +116,8 @@ export function MarkdownView({
       alive = false;
     };
   }, [html, path]);
+
+  if (raw === null && !err) return null;
 
   return (
     <div className="view md-view">

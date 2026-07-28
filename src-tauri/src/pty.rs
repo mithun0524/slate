@@ -7,7 +7,12 @@ use portable_pty::{native_pty_system, ChildKiller, CommandBuilder, PtySize};
 use serde::Serialize;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+
+/// Output-coalescing window and hard size cap per `pty://data` event.
+const FLUSH_MS: u64 = 3;
+const FLUSH_MAX: usize = 256 * 1024;
 
 #[derive(Clone, Serialize)]
 struct PtyData {
@@ -253,11 +258,15 @@ impl PtySession {
         let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
         let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
 
+        // Reader thread: drain the pty as fast as it produces, scan for OSC 7,
+        // hand raw chunks to the flusher. One IPC event per read chunk would
+        // saturate the webview under a firehose (build output, agent streaming),
+        // so emitting is coalesced on a second thread.
+        let (tx, rx) = std::sync::mpsc::channel::<Vec<u8>>();
         let app_read = app.clone();
         let read_id = id.clone();
         std::thread::spawn(move || {
             let mut buf = [0u8; 8192];
-            let mut pending: Vec<u8> = Vec::new();
             let mut osc = OscScanner::default();
             loop {
                 match reader.read(&mut buf) {
@@ -266,11 +275,36 @@ impl PtySession {
                         for &b in &buf[..n] {
                             osc.feed(b, &app_read, &read_id);
                         }
-                        pending.extend_from_slice(&buf[..n]);
-                        emit_decoded(&app_read, &read_id, &mut pending);
+                        if tx.send(buf[..n].to_vec()).is_err() {
+                            break;
+                        }
                     }
                     Err(_) => break,
                 }
+            }
+        });
+
+        let app_flush = app.clone();
+        let flush_id = id.clone();
+        std::thread::spawn(move || {
+            let mut pending: Vec<u8> = Vec::new();
+            loop {
+                match rx.recv() {
+                    Ok(chunk) => pending.extend_from_slice(&chunk),
+                    Err(_) => break, // reader gone
+                }
+                // Coalesce a short burst into one event. 3ms is imperceptible
+                // for keystroke echo but collapses hundreds of chunks under load.
+                while pending.len() < FLUSH_MAX {
+                    match rx.recv_timeout(Duration::from_millis(FLUSH_MS)) {
+                        Ok(chunk) => pending.extend_from_slice(&chunk),
+                        Err(_) => break,
+                    }
+                }
+                emit_decoded(&app_flush, &flush_id, &mut pending);
+            }
+            if !pending.is_empty() {
+                emit_decoded(&app_flush, &flush_id, &mut pending);
             }
         });
 

@@ -5,6 +5,8 @@ mod classifier;
 mod git;
 mod override_server;
 mod pty;
+mod scan;
+mod search;
 mod types;
 mod watcher;
 
@@ -13,10 +15,8 @@ use pty::PtySession;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use regex::RegexBuilder;
 use tauri::{AppHandle, State};
-use types::{CommitInfo, FileMatches, HeadInfo, LineMatch, TreeEntry};
-use walkdir::WalkDir;
+use types::{BranchInfo, CommitInfo, FileMatches, HeadInfo, StashEntry, TreeEntry};
 
 #[derive(Default)]
 struct AppState {
@@ -30,6 +30,16 @@ fn home_dir() -> PathBuf {
     std::env::var("HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| PathBuf::from("."))
+}
+
+/// The open workspace root, or an error the UI can show.
+fn ws(state: &State<AppState>) -> Result<PathBuf, String> {
+    state
+        .workspace
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or_else(|| "no workspace open".to_string())
 }
 
 /// Open a workspace: (re)start the watcher and report whether it's a git repo.
@@ -82,18 +92,18 @@ fn pty_close(state: State<AppState>, id: String) {
 
 /// Heuristic: is an agent (Claude Code) running under the terminal's shell?
 /// Walks the process tree from the shell pid and looks for a "claude" process.
-#[tauri::command]
-fn agent_running(state: State<AppState>) -> bool {
+#[tauri::command(async)]
+fn agent_running(state: State<AppState>) -> Result<bool, String> {
     let shells: Vec<u32> = state.shell_pids.lock().unwrap().values().copied().collect();
     if shells.is_empty() {
-        return false;
+        return Ok(false);
     }
     let out = match std::process::Command::new("ps")
         .args(["-axo", "pid=,ppid=,args="])
         .output()
     {
         Ok(o) => o,
-        Err(_) => return false,
+        Err(_) => return Ok(false),
     };
     let text = String::from_utf8_lossy(&out.stdout);
 
@@ -120,14 +130,14 @@ fn agent_running(state: State<AppState>) -> bool {
         if let Some(args) = args_of.get(&pid) {
             let a = args.to_ascii_lowercase();
             if !shell_set.contains(&pid) && a.contains("claude") {
-                return true;
+                return Ok(true);
             }
         }
         if let Some(kids) = children.get(&pid) {
             stack.extend(kids);
         }
     }
-    false
+    Ok(false)
 }
 
 #[tauri::command]
@@ -148,105 +158,126 @@ fn pty_resize(state: State<AppState>, id: String, cols: u16, rows: u16) -> Resul
     }
 }
 
-#[tauri::command]
+// Every command below is marked `(async)`: Tauri runs plain `#[tauri::command]`
+// bodies on the main thread, which on macOS is the UI thread — a `git diff` or
+// a full-tree search would freeze the window while it ran. `(async)` moves the
+// (still synchronous) body onto the async runtime's thread pool.
+
+#[tauri::command(async)]
 fn git_tree(state: State<AppState>) -> Result<Vec<TreeEntry>, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::tree(&root)
+    git::tree(&ws(&state)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_diff(state: State<AppState>, paths: Vec<String>) -> Result<String, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::diff(&root, &paths)
+    git::diff(&ws(&state)?, &paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_branch(state: State<AppState>) -> Result<String, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::branch(&root)
+    git::branch(&ws(&state)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_head_info(state: State<AppState>) -> Result<HeadInfo, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::head_info(&root)
+    git::head_info(&ws(&state)?)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_log(state: State<AppState>, limit: u32) -> Result<Vec<CommitInfo>, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::log(&root, limit as usize)
+    git::log(&ws(&state)?, limit as usize)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_stage(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
-    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
-    git::stage(&root, &paths)
+    git::stage(&ws(&state)?, &paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_unstage(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
-    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
-    git::unstage(&root, &paths)
+    git::unstage(&ws(&state)?, &paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_discard(state: State<AppState>, paths: Vec<String>) -> Result<(), String> {
-    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
-    git::discard(&root, &paths)
+    git::discard(&ws(&state)?, &paths)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_commit(state: State<AppState>, message: String) -> Result<String, String> {
-    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
-    git::commit(&root, &message)
+    git::commit(&ws(&state)?, &message)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn git_commit_diff(state: State<AppState>, hash: String) -> Result<String, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    git::commit_diff(&root, &hash)
+    git::commit_diff(&ws(&state)?, &hash)
+}
+
+// --- branches / remote / stash (shell out to the user's git; see git.rs) ---
+
+#[tauri::command(async)]
+fn git_branches(state: State<AppState>) -> Result<Vec<BranchInfo>, String> {
+    git::branches(&ws(&state)?)
+}
+
+#[tauri::command(async)]
+fn git_checkout(state: State<AppState>, name: String, create: bool) -> Result<String, String> {
+    git::checkout(&ws(&state)?, &name, create)
+}
+
+#[tauri::command(async)]
+fn git_fetch(state: State<AppState>) -> Result<String, String> {
+    git::fetch(&ws(&state)?)
+}
+
+#[tauri::command(async)]
+fn git_pull(state: State<AppState>) -> Result<String, String> {
+    git::pull(&ws(&state)?)
+}
+
+#[tauri::command(async)]
+fn git_push(state: State<AppState>) -> Result<String, String> {
+    git::push(&ws(&state)?)
+}
+
+#[tauri::command(async)]
+fn git_stash_push(state: State<AppState>, message: String) -> Result<String, String> {
+    git::stash_push(&ws(&state)?, &message)
+}
+
+#[tauri::command(async)]
+fn git_stash_pop(state: State<AppState>, index: usize) -> Result<String, String> {
+    git::stash_pop(&ws(&state)?, index)
+}
+
+#[tauri::command(async)]
+fn git_stash_list(state: State<AppState>) -> Result<Vec<StashEntry>, String> {
+    git::stash_list(&ws(&state)?)
+}
+
+/// Open a URL in the user's default browser. The terminal's link addon must
+/// not use `window.open` — in a WKWebView that navigates the app away.
+#[tauri::command(async)]
+fn open_external(url: String) -> Result<(), String> {
+    // Only ever hand a real http(s) URL to the OS opener.
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return Err("refusing to open non-http url".into());
+    }
+    let status = std::process::Command::new("open")
+        .arg(&url)
+        .status()
+        .map_err(|e| e.to_string())?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err("failed to open url".into())
+    }
 }
 
 /// Read a text file for the markdown viewer. Restricted to inside the workspace.
-#[tauri::command]
+#[tauri::command(async)]
 fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
+    let root = ws(&state)?;
 
     // Resolve relative to workspace and confine to it.
     let candidate = if PathBuf::from(&path).is_absolute() {
@@ -268,7 +299,7 @@ fn read_text(state: State<AppState>, path: String) -> Result<String, String> {
 
 /// Clone a git repo (via the user's `git`, so their creds/ssh work) into
 /// `parent/<name>` and return the created path.
-#[tauri::command]
+#[tauri::command(async)]
 fn clone_repo(url: String, parent: String) -> Result<String, String> {
     let url = url.trim();
     if url.is_empty() {
@@ -298,7 +329,7 @@ fn clone_repo(url: String, parent: String) -> Result<String, String> {
 }
 
 /// Create a new folder under `parent`, `git init` it, and return its path.
-#[tauri::command]
+#[tauri::command(async)]
 fn create_project(parent: String, name: String) -> Result<String, String> {
     let name = name.trim();
     if name.is_empty() || name.contains('/') || name.contains("..") {
@@ -319,7 +350,7 @@ fn create_project(parent: String, name: String) -> Result<String, String> {
 /// Spotlight-style directory search. Uses macOS `mdfind` to find folders whose
 /// name matches `query`, ranked toward shallow, home-rooted, project-looking
 /// dirs. Empty for very short queries. Never errors — returns [] on any trouble.
-#[tauri::command]
+#[tauri::command(async)]
 fn search_dirs(query: String) -> Vec<String> {
     let q = query.trim();
     if q.len() < 2 {
@@ -392,7 +423,7 @@ fn search_dirs(query: String) -> Vec<String> {
 }
 
 /// Full-text search across the workspace. Returns matches grouped by file.
-#[tauri::command]
+#[tauri::command(async)]
 fn search_text(
     state: State<AppState>,
     query: String,
@@ -400,176 +431,28 @@ fn search_text(
     whole_word: bool,
     regex_mode: bool,
 ) -> Result<Vec<FileMatches>, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-    if query.trim().is_empty() {
-        return Ok(Vec::new());
-    }
-
-    let mut pat = if regex_mode {
-        query.clone()
-    } else {
-        regex::escape(&query)
-    };
-    if whole_word {
-        // Group so alternation/anchors bind inside the word boundaries.
-        pat = format!(r"\b(?:{pat})\b");
-    }
-    let re = RegexBuilder::new(&pat)
-        .case_insensitive(!case_sensitive)
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    const MAX_FILES: usize = 300;
-    const MAX_TOTAL: usize = 3000;
-    const PER_FILE: usize = 40;
-    const MAX_LINE: usize = 500;
-
-    let mut out: Vec<FileMatches> = Vec::new();
-    let mut total = 0usize;
-
-    let walker = WalkDir::new(&root).into_iter().filter_entry(|e| {
-        let name = e.file_name().to_string_lossy();
-        // Skip ignored / hidden directories.
-        if e.file_type().is_dir() {
-            return !SPEC_IGNORED.iter().any(|ig| *ig == name) && !name.starts_with('.');
-        }
-        true
-    });
-
-    for entry in walker.flatten() {
-        if out.len() >= MAX_FILES || total >= MAX_TOTAL {
-            break;
-        }
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let path = entry.path();
-        // Read as text; skip binaries / unreadable / huge files.
-        let content = match std::fs::read(path) {
-            Ok(b) if b.len() <= 2 * 1024 * 1024 && !b.contains(&0) => b,
-            _ => continue,
-        };
-        let text = match String::from_utf8(content) {
-            Ok(t) => t,
-            Err(_) => continue,
-        };
-
-        let mut matches: Vec<LineMatch> = Vec::new();
-        for (i, line) in text.lines().enumerate() {
-            if let Some(m) = re.find(line) {
-                let col_chars = line[..m.start()].chars().count();
-                let len = m.as_str().chars().count() as u32;
-                let all: Vec<char> = line.chars().collect();
-                // Window the shown text around the match so highlight offsets
-                // stay valid on very long lines.
-                let (text, col) = if all.len() > MAX_LINE {
-                    let start = col_chars.saturating_sub(40);
-                    let end = (start + MAX_LINE).min(all.len());
-                    let mut s: String = all[start..end].iter().collect();
-                    let mut c = col_chars - start;
-                    if start > 0 {
-                        s.insert(0, '…');
-                        c += 1;
-                    }
-                    (s, c as u32)
-                } else {
-                    (line.to_string(), col_chars as u32)
-                };
-                matches.push(LineMatch {
-                    line: (i + 1) as u32,
-                    col,
-                    len,
-                    text,
-                });
-                total += 1;
-                if matches.len() >= PER_FILE || total >= MAX_TOTAL {
-                    break;
-                }
-            }
-        }
-        if !matches.is_empty() {
-            let rel = path
-                .strip_prefix(&root)
-                .unwrap_or(path)
-                .to_string_lossy()
-                .to_string();
-            out.push(FileMatches { path: rel, matches });
-        }
-    }
-    out.sort_by(|a, b| a.path.cmp(&b.path));
-    Ok(out)
+    search::search(
+        &ws(&state)?,
+        &query,
+        &search::Opts {
+            case_sensitive,
+            whole_word,
+            regex_mode,
+        },
+    )
 }
-
-/// Directory names never descended into when listing specs.
-const SPEC_IGNORED: &[&str] = &[
-    ".git",
-    "node_modules",
-    "target",
-    "dist",
-    "build",
-    ".next",
-    "vendor",
-];
 
 /// List every markdown file in the workspace (relative paths), for the spec
 /// explorer. Bounded so a pathological tree can't hang the UI.
-#[tauri::command]
+#[tauri::command(async)]
 fn list_specs(state: State<AppState>) -> Result<Vec<String>, String> {
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
-
-    let mut out: Vec<String> = Vec::new();
-    let mut stack: Vec<PathBuf> = vec![root.clone()];
-    const MAX: usize = 5000;
-
-    while let Some(dir) = stack.pop() {
-        let entries = match std::fs::read_dir(&dir) {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        for entry in entries.flatten() {
-            let path = entry.path();
-            let name = entry.file_name().to_string_lossy().to_string();
-            let ft = match entry.file_type() {
-                Ok(t) => t,
-                Err(_) => continue,
-            };
-            if ft.is_dir() {
-                if SPEC_IGNORED.iter().any(|ig| *ig == name) || name.starts_with('.') {
-                    continue;
-                }
-                stack.push(path);
-            } else {
-                let lower = name.to_ascii_lowercase();
-                if lower.ends_with(".md") || lower.ends_with(".markdown") {
-                    if let Ok(rel) = path.strip_prefix(&root) {
-                        out.push(rel.to_string_lossy().to_string());
-                        if out.len() >= MAX {
-                            out.sort();
-                            return Ok(out);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    out.sort();
-    Ok(out)
+    Ok(search::list_markdown(&ws(&state)?))
 }
 
 /// Write text back to a file inside the workspace (spec checkbox toggles).
-#[tauri::command]
+#[tauri::command(async)]
 fn write_text(state: State<AppState>, path: String, content: String) -> Result<(), String> {
-    let root = state.workspace.lock().unwrap().clone().ok_or("no workspace open")?;
+    let root = ws(&state)?;
     let candidate = if PathBuf::from(&path).is_absolute() {
         PathBuf::from(&path)
     } else {
@@ -586,16 +469,11 @@ fn write_text(state: State<AppState>, path: String, content: String) -> Result<(
 
 /// Read a workspace image and return it as a `data:` URL, so relative `<img>`
 /// paths in a rendered README (which the webview cannot fetch) still display.
-#[tauri::command]
+#[tauri::command(async)]
 fn read_asset(state: State<AppState>, path: String) -> Result<String, String> {
     use base64::{engine::general_purpose::STANDARD, Engine};
 
-    let root = state
-        .workspace
-        .lock()
-        .unwrap()
-        .clone()
-        .ok_or("no workspace open")?;
+    let root = ws(&state)?;
 
     let candidate = if PathBuf::from(&path).is_absolute() {
         PathBuf::from(&path)
@@ -672,6 +550,15 @@ pub fn run() {
             git_discard,
             git_commit,
             git_commit_diff,
+            git_branches,
+            git_checkout,
+            git_fetch,
+            git_pull,
+            git_push,
+            git_stash_push,
+            git_stash_pop,
+            git_stash_list,
+            open_external,
             read_text,
             write_text,
             read_asset,

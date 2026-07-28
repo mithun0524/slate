@@ -37,7 +37,8 @@ function CommitDiff({ hash }: { hash: string }) {
 
 // Pane B / timeline: vertical commit history; click a commit to expand its diff.
 export function TimelineView({ refreshKey }: { refreshKey: number }) {
-  const [commits, setCommits] = useState<CommitInfo[]>([]);
+  // null = first load pending; [] would flash "No commits yet." for a frame.
+  const [commits, setCommits] = useState<CommitInfo[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
 
@@ -51,13 +52,15 @@ export function TimelineView({ refreshKey }: { refreshKey: number }) {
     };
   }, [refreshKey]);
 
+  if (commits === null && !err) return null;
+
   return (
     <div className="view timeline-view">
       <div className="view-crumb">
         <span className="crumb-label">timeline · commits</span>
-        {commits.length > 0 && (
+        {(commits?.length ?? 0) > 0 && (
           <span className="crumb-stat">
-            <span className="pill">{commits.length}</span>
+            <span className="pill">{commits?.length}</span>
           </span>
         )}
       </div>
@@ -68,14 +71,14 @@ export function TimelineView({ refreshKey }: { refreshKey: number }) {
             ? "Not a git repository."
             : err}
         </div>
-      ) : commits.length === 0 ? (
+      ) : commits?.length === 0 ? (
         <div className="view-empty">
           <div className="empty-glyph">◷</div>
           No commits yet.
         </div>
       ) : (
         <div className="tl-scroll">
-          {commits.map((c) => {
+          {(commits ?? []).map((c) => {
             const isOpen = open === c.hash;
             return (
               <div className={`tl-item ${isOpen ? "open" : ""}`} key={c.hash}>
