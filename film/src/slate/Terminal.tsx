@@ -5,11 +5,13 @@ export type Line = { f: number; verb: string; rest: string; ok?: boolean };
 
 /** The same session as the cold open, still running — but now at the speed a
  *  person reads, because nothing has to be chased. */
-export const Terminal: React.FC<{ frame: number; lines: Line[]; size?: number }> = ({
-  frame,
-  lines,
-  size = 22,
-}) => {
+export const Terminal: React.FC<{
+  frame: number;
+  lines: Line[];
+  size?: number;
+  /** extra room at the bottom, for cuts that overlay a caption strip */
+  padBottom?: number;
+}> = ({ frame, lines, size = 22, padBottom = 28 }) => {
   const blink = Math.floor(frame / 15) % 2 === 0;
   return (
     <div
@@ -19,7 +21,7 @@ export const Terminal: React.FC<{ frame: number; lines: Line[]; size?: number }>
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
-        padding: "0 30px 28px",
+        padding: `0 30px ${padBottom}px`,
         fontFamily: mono,
         overflow: "hidden",
         maskImage: "linear-gradient(to bottom, transparent 0, #000 16%)",

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* The hero demo. Autoplays muted and looping like a screenshot that moves,
-   but stays a real <video> with a control strip so it can be paused,
-   restarted, and never plays at all under reduced-motion. */
+/* The hero loop (film/ → HeroLoop, 15s). Autoplays muted and looping like a
+   screenshot that moves, but stays a real <video> with a control strip so it
+   can be paused, restarted, and never plays at all under reduced-motion.
+   The cut is stitched so frame 449 matches frame 0 — no visible loop point. */
 
 export default function HeroVideo() {
   const ref = useRef<HTMLVideoElement>(null);
@@ -55,19 +56,19 @@ export default function HeroVideo() {
       <div className="frame">
         <video
           ref={ref}
-          poster="/demo/slate-ad-poster.jpg"
+          poster="/demo/slate-hero-poster.jpg"
           autoPlay={!still}
           muted
           loop
           playsInline
           preload="metadata"
-          aria-label="Slate ad: an agent edits files while the right-hand pane switches itself between spec, changes and diff; ticking a checkbox in the rendered spec writes back to the file; the agent narrates a note and blocks on an approval; the activity log replays each event's diff."
+          aria-label="Slate, looping: an agent writes a spec, edits code and moves files in the left-hand shell, and the right-hand pane is already showing the spec, then the diff, then the tree — no tabs, no clicks, nothing navigated to."
         >
-          <source src="/demo/slate-ad.webm" type="video/webm" />
-          <source src="/demo/slate-ad.mp4" type="video/mp4" />
+          <source src="/demo/slate-hero.webm" type="video/webm" />
+          <source src="/demo/slate-hero.mp4" type="video/mp4" />
         </video>
         <div className="player-bar">
-          <span>Slate 0.1.0 — pane B switching on its own, no keystrokes</span>
+          <span>Slate 0.1.0 — pane B opening itself: spec, diff, tree. No keystrokes.</span>
           <span className="sp" />
           <button type="button" onClick={restart}>Restart</button>
           <button type="button" onClick={toggle} aria-pressed={!playing}>

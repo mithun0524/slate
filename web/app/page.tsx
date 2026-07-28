@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import HeroVideo from "@/components/HeroVideo";
+import FilmModal from "@/components/FilmModal";
 import ViewTabs from "@/components/ViewTabs";
 import CopyLine from "@/components/CopyLine";
 import Faq from "@/components/Faq";
@@ -68,6 +69,10 @@ export default function Home() {
         </Reveal>
 
         <HeroVideo />
+
+        <div className="hero-film">
+          <FilmModal />
+        </div>
 
         <div className="logos">
           <span>Works with</span>

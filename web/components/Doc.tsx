@@ -48,6 +48,16 @@ export default function Doc({
         <div className="tag">{kicker}</div>
         <h1 >{title}</h1>
         <p className="lead">{lead}</p>
+
+        <details className="toc-inline">
+          <summary>On this page</summary>
+          <div>
+            {toc.map((x) => (
+              <a key={x.id} href={`#${x.id}`}>{x.label}</a>
+            ))}
+          </div>
+        </details>
+
         {children}
         {(prev || next) && (
           <div className="pager">

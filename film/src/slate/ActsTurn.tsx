@@ -110,22 +110,28 @@ export const AppCard: React.FC<{
   right: React.ReactNode;
   clip?: string;
   lines?: Line[];
-}> = ({ frame, right, clip, lines = LINES }) => (
+  /** the film frames the app as an object; the hero cut runs it full-bleed */
+  box?: { left: number; top: number; width: number; height: number };
+  radius?: number;
+  padBottom?: number;
+}> = ({ frame, right, clip, lines = LINES, box = CARD, radius, padBottom }) => (
   <div
     style={{
       position: "absolute",
-      left: CARD.left,
-      top: CARD.top,
-      width: CARD.width,
-      height: CARD.height,
-      border: `1px solid ${c.line}`,
+      left: box.left,
+      top: box.top,
+      width: box.width,
+      height: box.height,
+      border: box === CARD ? `1px solid ${c.line}` : "none",
+      borderRadius: radius,
       background: c.bg,
-      boxShadow: "0 80px 180px -50px rgba(0,0,0,.9)",
+      boxShadow: box === CARD ? "0 80px 180px -50px rgba(0,0,0,.9)" : "none",
       clipPath: clip,
       display: "flex",
+      overflow: "hidden",
     }}
   >
-    <div style={{ width: CARD.split, position: "relative", background: c.bg2 }}>
+    <div style={{ width: box.width / 2, position: "relative", background: c.bg2 }}>
       <div
         style={{
           height: 46,
@@ -144,7 +150,7 @@ export const AppCard: React.FC<{
         zsh
         <span style={{ color: c.dim3, textTransform: "none", letterSpacing: 0 }}>~/acme-api</span>
       </div>
-      <Terminal frame={frame} lines={lines} />
+      <Terminal frame={frame} lines={lines} padBottom={padBottom} />
     </div>
 
     {/* the seam, now load-bearing */}

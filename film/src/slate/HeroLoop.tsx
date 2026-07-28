@@ -3,7 +3,7 @@ import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { at, c, CAM, IN, inOut } from "./theme";
 import { Cap, Words } from "./Kinetic";
 import { Grain, Vignette } from "./Chrome";
-import { AppCard, CARD } from "./ActsTurn";
+import { AppCard } from "./ActsTurn";
 import { DiffView, SpecView, TreeView } from "./Panes";
 import { type Line } from "./Terminal";
 
@@ -13,7 +13,15 @@ import { type Line } from "./Terminal";
  * times, so it opens from the seam and drains back into it: frame 449 is
  * pixel-identical to frame 0, and 450 divides the 30-frame caret blink, so the
  * stitch carries no visible tick.
+ *
+ * Runs **full-bleed**, unlike the film, which frames the app as an object on a
+ * dark field. A hero already sits inside the site's own card, and a card inside
+ * a card leaves the product tiny — so here the app is the frame, and the causal
+ * line rides a scrim strip along the bottom.
  */
+
+const BOX = { left: 0, top: 0, width: 1920, height: 1080 };
+const STRIP = 118;
 
 const LINES: Line[] = [
   { f: 14, verb: "Write", rest: "docs/specs/rate-limiting.md" },
@@ -47,7 +55,7 @@ export const HeroLoop: React.FC = () => {
           style={{
             position: "absolute",
             width: 520,
-            height: CARD.height,
+            height: BOX.height,
             background:
               "radial-gradient(ellipse 40% 60% at 50% 50%, rgba(228,228,230,.09), transparent 70%)",
             opacity: alone,
@@ -56,7 +64,7 @@ export const HeroLoop: React.FC = () => {
         <div
           style={{
             width: 1.5 + alone * 1.5,
-            height: CARD.height,
+            height: BOX.height,
             background: `rgba(228,228,230,${0.16 + 0.7 * alone})`,
             boxShadow: `0 0 ${50 * alone}px rgba(228,228,230,${0.5 * alone})`,
           }}
@@ -66,6 +74,8 @@ export const HeroLoop: React.FC = () => {
       <AppCard
         frame={frame}
         lines={LINES}
+        box={BOX}
+        padBottom={STRIP + 18}
         clip={`inset(0 ${open}% 0 ${open}%)`}
         right={
           <>
@@ -84,10 +94,10 @@ export const HeroLoop: React.FC = () => {
             key={beat}
             style={{
               position: "absolute",
-              top: CARD.top,
+              top: 0,
               left: 960,
               width: 2,
-              height: CARD.height,
+              height: BOX.height,
               background: c.fg,
               opacity: inOut(local, [0, 5], [10, 26]) * 0.5,
               scale: `${at(local, [0, 14], [1, 3])} 1`,
@@ -97,35 +107,74 @@ export const HeroLoop: React.FC = () => {
         );
       })}
 
-      <Cap left={214} bottom={96}>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: STRIP + 90,
+          background:
+            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
+          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
+        }}
+      />
+
+      <Cap left={64} bottom={46}>
         <Words
           frame={frame}
           text="It writes a spec → the spec is open."
           start={40}
           hold={82}
-          size={54}
+          size={50}
           color={c.dim}
           hot={{ "→": c.dim2, spec: c.fg }}
         />
       </Cap>
-      <Cap left={214} bottom={96}>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: STRIP + 90,
+          background:
+            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
+          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
+        }}
+      />
+
+      <Cap left={64} bottom={46}>
         <Words
           frame={frame}
           text="It edits code → the diff is open."
           start={158}
           hold={78}
-          size={54}
+          size={50}
           color={c.dim}
           hot={{ "→": c.dim2, diff: c.fg }}
         />
       </Cap>
-      <Cap left={214} bottom={96}>
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: STRIP + 90,
+          background:
+            "linear-gradient(to top, rgba(10,10,11,.94) 0%, rgba(10,10,11,.7) 46%, transparent 100%)",
+          opacity: at(frame, [26, 50], [0, 1]) - at(frame, [CLOSE - 10, CLOSE + 16], [0, 1], IN),
+        }}
+      />
+
+      <Cap left={64} bottom={46}>
         <Words
           frame={frame}
           text="It moves files → the tree is open."
           start={290}
           hold={72}
-          size={54}
+          size={50}
           color={c.dim}
           hot={{ "→": c.dim2, tree: c.fg }}
         />
